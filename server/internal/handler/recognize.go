@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/mtiano/server/internal/service"
 	"github.com/mtiano/server/pkg/mahjong"
 )
@@ -61,6 +62,7 @@ func (h *RecognizeHandler) Handle(c *gin.Context) {
 		}
 	}
 
+	//
 	score := mahjong.CalculateScore(totalHan, 30, false, true)
 
 	tileStrs := make([]string, len(tiles))
