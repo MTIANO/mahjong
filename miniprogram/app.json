@@ -1,0 +1,38 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/yaku/yaku",
+    "pages/score/score",
+    "pages/camera/camera"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#1a1a2e",
+    "navigationBarTitleText": "MTiano",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f5f5"
+  },
+  "tabBar": {
+    "color": "#999",
+    "selectedColor": "#1a1a2e",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/yaku/yaku",
+        "text": "番型表"
+      },
+      {
+        "pagePath": "pages/score/score",
+        "text": "点数表"
+      },
+      {
+        "pagePath": "pages/camera/camera",
+        "text": "识别"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
