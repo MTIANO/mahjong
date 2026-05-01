@@ -55,9 +55,9 @@ def preprocess(image):
 def postprocess(output, scale, pad_x, pad_y, conf_threshold):
     predictions = output[0]
 
+    # YOLOv11 output: [1, 4+num_classes, num_detections] e.g. [1, 42, 8400]
+    # Need to transpose to [num_detections, 4+num_classes]
     if predictions.shape[-1] == 4 + len(CLASS_NAMES):
-        preds = predictions[0]
-    elif predictions.shape[1] == 4 + len(CLASS_NAMES):
         preds = predictions[0]
     else:
         preds = predictions[0].T
@@ -161,7 +161,9 @@ def predict():
     input_name = session.get_inputs()[0].name
     output = session.run(None, {input_name: input_data})
 
+    print(f"[DEBUG] output shape: {output[0].shape}")
     detections = postprocess(output, scale, pad_x, pad_y, CONFIDENCE_THRESHOLD)
+    print(f"[DEBUG] detections: {len(detections)}")
     tiles = [d["tile"] for d in detections]
     tile_string = build_tile_string(tiles)
 
