@@ -128,14 +128,32 @@ func HandleCalculate(c *gin.Context) {
 	yakuResults := mahjong.Judge(hand)
 	log.Printf("[Calculate] 判定结果: %+v", yakuResults)
 
-	totalHan := 0
+	yakuHan := 0
 	var yakuResp []YakuResponse
 	for _, y := range yakuResults {
 		if y.Han > 0 {
-			totalHan += y.Han
+			yakuHan += y.Han
 			yakuResp = append(yakuResp, YakuResponse{Name: y.Name, Han: y.Han})
 		}
 	}
+
+	// 无役判定：必须有至少一个役才能和牌（宝牌不算役）
+	if yakuHan == 0 {
+		log.Printf("[Calculate] 无役，不能和牌")
+		tileStrs := make([]string, len(tiles))
+		for i, t := range tiles {
+			tileStrs[i] = t.String()
+		}
+		c.JSON(http.StatusOK, RecognizeResponse{
+			Tiles:    tileStrs,
+			Yaku:     yakuResp,
+			TotalHan: 0,
+			Score:    mahjong.ScoreResult{},
+		})
+		return
+	}
+
+	totalHan := yakuHan
 
 	// 计算宝牌加番（包含副露中的牌）
 	if req.Dora != "" {

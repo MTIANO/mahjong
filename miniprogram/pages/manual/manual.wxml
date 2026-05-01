@@ -165,13 +165,14 @@
       </view>
     </view>
     <view class="result-section" wx:if="{{result.yaku.length === 0}}">
-      <text class="result-title">无役</text>
+      <text class="result-title">无役，不能和牌</text>
     </view>
     <view class="result-section" wx:if="{{result.total_han > 0}}">
       <text class="result-title">得分</text>
       <text class="total-score" wx:if="{{!isTsumo}}">{{result.total_han}}番 — {{result.score.RonTotal}}点</text>
-      <text class="total-score" wx:if="{{isTsumo && isParent}}">{{result.total_han}}番 — 自摸 {{result.score.TsumoFromChild}}点∀</text>
-      <text class="total-score" wx:if="{{isTsumo && !isParent}}">{{result.total_han}}番 — 自摸 {{result.score.TsumoFromParent}}/{{result.score.TsumoFromChild}}点</text>
+      <text class="total-score" wx:if="{{isTsumo}}">{{result.total_han}}番 — {{result.score.TsumoTotal}}点</text>
+      <text class="score-detail" wx:if="{{isTsumo && isParent}}">({{result.score.TsumoFromChild}}点×3家)</text>
+      <text class="score-detail" wx:if="{{isTsumo && !isParent}}">(庄家{{result.score.TsumoFromParent}}点 + 闲家{{result.score.TsumoFromChild}}点×2)</text>
     </view>
   </view>
 

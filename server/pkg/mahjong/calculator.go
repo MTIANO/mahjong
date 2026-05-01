@@ -6,6 +6,7 @@ type ScoreResult struct {
 	RonTotal        int
 	TsumoFromParent int
 	TsumoFromChild  int
+	TsumoTotal      int
 	ScoreName       string
 }
 
@@ -53,6 +54,7 @@ func CalculateScore(han, fu int, isParent, isTsumo bool) ScoreResult {
 		if isTsumo {
 			each := roundUp100(basic * 2)
 			result.TsumoFromChild = each
+			result.TsumoTotal = each * 3
 			result.RonTotal = each * 3
 		} else {
 			result.RonTotal = roundUp100(basic * 6)
@@ -61,7 +63,8 @@ func CalculateScore(han, fu int, isParent, isTsumo bool) ScoreResult {
 		if isTsumo {
 			result.TsumoFromParent = roundUp100(basic * 2)
 			result.TsumoFromChild = roundUp100(basic)
-			result.RonTotal = result.TsumoFromParent + result.TsumoFromChild*2
+			result.TsumoTotal = result.TsumoFromParent + result.TsumoFromChild*2
+			result.RonTotal = result.TsumoTotal
 		} else {
 			result.RonTotal = roundUp100(basic * 4)
 		}
@@ -75,12 +78,14 @@ func applyFixedScore(result *ScoreResult, basePoints int, isParent, isTsumo bool
 		result.RonTotal = basePoints * 6
 		if isTsumo {
 			result.TsumoFromChild = basePoints * 2
+			result.TsumoTotal = basePoints * 6
 		}
 	} else {
 		result.RonTotal = basePoints * 4
 		if isTsumo {
 			result.TsumoFromParent = basePoints * 2
 			result.TsumoFromChild = basePoints
+			result.TsumoTotal = basePoints * 4
 		}
 	}
 }
