@@ -1,0 +1,20 @@
+# Go
+server/server
+server/tmp/
+*.exe
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Mini Program
+miniprogram/node_modules/
+miniprogram/miniprogram_npm/
+
+# Config secrets
+server/configs/config.local.yaml
