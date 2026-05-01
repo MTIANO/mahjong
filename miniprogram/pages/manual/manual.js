@@ -12,10 +12,15 @@ Page({
       '1s':'一索','2s':'二索','3s':'三索','4s':'四索','5s':'五索','6s':'六索','7s':'七索','8s':'八索','9s':'九索',
       '1z':'東','2z':'南','3z':'西','4z':'北','5z':'白','6z':'發','7z':'中'
     },
+    meldTypeNames: { chi: '吃', pon: '碰', open_kan: '明杠', closed_kan: '暗杠' },
     selectedTiles: [],
     doraTiles: [],
-    selectingDora: false,
+    melds: [],
+    meldBuffer: [],
+    selectMode: 'hand',
+    meldType: 'pon',
     isTsumo: true,
+    isParent: true,
     seatWind: 0,
     roundWind: 0,
     winds: ['東','南','西','北'],
@@ -24,9 +29,15 @@ Page({
     error: ''
   },
 
+  getMaxHandTiles() {
+    return 14 - this.data.melds.length * 3
+  },
+
   addTile(e) {
     const tile = e.currentTarget.dataset.tile
-    if (this.data.selectingDora) {
+    const mode = this.data.selectMode
+
+    if (mode === 'dora') {
       const dora = this.data.doraTiles
       if (dora.length >= 5) {
         wx.showToast({ title: '最多5张宝牌', icon: 'none' })
@@ -34,15 +45,103 @@ Page({
       }
       dora.push(tile)
       this.setData({ doraTiles: dora, result: null, error: '' })
+    } else if (mode === 'meld') {
+      this.addMeldTile(tile)
     } else {
       const selected = this.data.selectedTiles
-      if (selected.length >= 14) {
-        wx.showToast({ title: '最多选14张牌', icon: 'none' })
+      const max = this.getMaxHandTiles()
+      if (selected.length >= max) {
+        wx.showToast({ title: `手牌最多${max}张`, icon: 'none' })
         return
       }
       selected.push(tile)
       this.setData({ selectedTiles: selected, result: null, error: '' })
     }
+  },
+
+  addMeldTile(tile) {
+    const buffer = this.data.meldBuffer
+    const meldType = this.data.meldType
+    const need = (meldType === 'open_kan' || meldType === 'closed_kan') ? 4 : 3
+
+    buffer.push(tile)
+    this.setData({ meldBuffer: buffer })
+
+    if (buffer.length === need) {
+      this.confirmMeld()
+    }
+  },
+
+  confirmMeld() {
+    const { meldBuffer, meldType, melds } = this.data
+    const need = (meldType === 'open_kan' || meldType === 'closed_kan') ? 4 : 3
+
+    if (meldBuffer.length !== need) {
+      wx.showToast({ title: `需要选${need}张牌`, icon: 'none' })
+      return
+    }
+
+    if (!this.validateMeld(meldBuffer, meldType)) {
+      this.setData({ meldBuffer: [] })
+      return
+    }
+
+    melds.push({ type: meldType, tiles: [...meldBuffer] })
+    const max = 14 - melds.length * 3
+    const selected = this.data.selectedTiles.slice(0, max)
+    this.setData({ melds, meldBuffer: [], selectMode: 'hand', selectedTiles: selected, result: null, error: '' })
+  },
+
+  validateMeld(tiles, type) {
+    if (type === 'pon') {
+      if (tiles[0] !== tiles[1] || tiles[1] !== tiles[2]) {
+        wx.showToast({ title: '碰需要3张相同牌', icon: 'none' })
+        return false
+      }
+    } else if (type === 'open_kan' || type === 'closed_kan') {
+      if (tiles[0] !== tiles[1] || tiles[1] !== tiles[2] || tiles[2] !== tiles[3]) {
+        wx.showToast({ title: '杠需要4张相同牌', icon: 'none' })
+        return false
+      }
+    } else if (type === 'chi') {
+      const suit = tiles[0][1]
+      if (suit === 'z') {
+        wx.showToast({ title: '字牌不能吃', icon: 'none' })
+        return false
+      }
+      for (let i = 1; i < tiles.length; i++) {
+        if (tiles[i][1] !== suit) {
+          wx.showToast({ title: '吃需要同花色', icon: 'none' })
+          return false
+        }
+      }
+      const nums = tiles.map(t => parseInt(t[0])).sort((a, b) => a - b)
+      if (nums[1] - nums[0] !== 1 || nums[2] - nums[1] !== 1) {
+        wx.showToast({ title: '吃需要连续数牌', icon: 'none' })
+        return false
+      }
+    }
+    return true
+  },
+
+  startMeld(e) {
+    const type = e.currentTarget.dataset.type
+    if (this.data.melds.length >= 4) {
+      wx.showToast({ title: '最多4组副露', icon: 'none' })
+      return
+    }
+    this.setData({ selectMode: 'meld', meldType: type, meldBuffer: [] })
+  },
+
+  cancelMeld() {
+    this.setData({ selectMode: 'hand', meldBuffer: [] })
+  },
+
+  removeMeld(e) {
+    const index = e.currentTarget.dataset.index
+    const melds = this.data.melds
+    melds.splice(index, 1)
+    this.setData({ melds, result: null, error: '' })
   },
 
   removeTile(e) {
@@ -59,16 +158,21 @@ Page({
     this.setData({ doraTiles: dora, result: null, error: '' })
   },
 
-  toggleDoraMode() {
-    this.setData({ selectingDora: !this.data.selectingDora })
+  setSelectMode(e) {
+    const mode = e.currentTarget.dataset.mode
+    this.setData({ selectMode: mode, meldBuffer: [] })
   },
 
   clearTiles() {
-    this.setData({ selectedTiles: [], doraTiles: [], result: null, error: '' })
+    this.setData({ selectedTiles: [], doraTiles: [], melds: [], meldBuffer: [], selectMode: 'hand', result: null, error: '' })
   },
 
   toggleTsumo() {
     this.setData({ isTsumo: !this.data.isTsumo })
+  },
+
+  toggleParent() {
+    this.setData({ isParent: !this.data.isParent })
   },
 
   setSeatWind(e) {
@@ -80,14 +184,20 @@ Page({
   },
 
   calculate() {
-    const { selectedTiles, doraTiles, isTsumo, seatWind, roundWind } = this.data
-    if (selectedTiles.length < 13) {
-      wx.showToast({ title: '至少选13张牌', icon: 'none' })
+    const { selectedTiles, melds, doraTiles, isTsumo, isParent, seatWind, roundWind } = this.data
+    const minHand = 14 - melds.length * 3 - 1
+    if (selectedTiles.length < minHand) {
+      wx.showToast({ title: '手牌数量不足', icon: 'none' })
       return
     }
 
     const tileStr = this.buildTileString(selectedTiles)
     const doraStr = doraTiles.length > 0 ? this.buildTileString(doraTiles) : ''
+    const meldsData = melds.map(m => ({
+      type: m.type,
+      tiles: this.buildTileString(m.tiles)
+    }))
+
     this.setData({ loading: true, error: '', result: null })
 
     wx.request({
@@ -96,8 +206,10 @@ Page({
       header: { 'Content-Type': 'application/json' },
       data: {
         tiles: tileStr,
+        melds: meldsData,
         dora: doraStr,
         is_tsumo: isTsumo,
+        is_parent: isParent,
         seat_wind: seatWind,
         round_wind: roundWind
       },

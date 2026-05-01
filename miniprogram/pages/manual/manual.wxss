@@ -71,6 +71,76 @@
   font-size: 26rpx;
 }
 
+.melds-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.meld-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 8rpx 12rpx;
+  background: #f9f9f9;
+  border-radius: 8rpx;
+}
+
+.meld-type-tag {
+  font-size: 22rpx;
+  color: #fff;
+  background: #1a1a2e;
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
+  margin-right: 8rpx;
+}
+
+.meld-buffer {
+  margin-top: 12rpx;
+  padding: 12rpx;
+  background: #fffbe6;
+  border-radius: 8rpx;
+  border: 1rpx solid #ffe58f;
+}
+
+.meld-buffer-hint {
+  font-size: 24rpx;
+  color: #d48806;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.meld-actions {
+  margin-top: 8rpx;
+}
+
+.cancel-btn {
+  font-size: 24rpx;
+  color: #e74c3c;
+  padding: 4rpx 16rpx;
+}
+
+.meld-add-btns {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+
+.meld-add-btn {
+  flex: 1;
+  text-align: center;
+  padding: 12rpx 0;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  background: #f0f0f0;
+  color: #333;
+  border: 1rpx solid #ddd;
+}
+
+.meld-add-btn:active {
+  background: #e0e0e0;
+}
+
 .mode-switch {
   margin-bottom: 24rpx;
 }

@@ -2,8 +2,8 @@
   <!-- 已选手牌 -->
   <view class="section">
     <view class="section-header">
-      <text class="section-title">手牌 ({{selectedTiles.length}}/14)</text>
-      <text class="clear-btn" bindtap="clearTiles" wx:if="{{selectedTiles.length > 0}}">清空</text>
+      <text class="section-title">手牌 ({{selectedTiles.length}}/{{14 - melds.length * 3}})</text>
+      <text class="clear-btn" bindtap="clearTiles" wx:if="{{selectedTiles.length > 0 || melds.length > 0}}">清空</text>
     </view>
     <view class="selected-tiles" wx:if="{{selectedTiles.length > 0}}">
       <view class="selected-tile" wx:for="{{selectedTiles}}" wx:key="index"
@@ -13,6 +13,37 @@
     </view>
     <view class="empty-hint" wx:else>
       <text>点击下方麻将牌添加手牌</text>
+    </view>
+  </view>
+
+  <!-- 副露区域 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">副露 ({{melds.length}}/4)</text>
+    </view>
+    <view class="melds-list" wx:if="{{melds.length > 0}}">
+      <view class="meld-item" wx:for="{{melds}}" wx:key="index"
+        data-index="{{index}}" bindtap="removeMeld">
+        <text class="meld-type-tag">{{meldTypeNames[item.type]}}</text>
+        <text class="tile-text tile-{{t[1]}}" wx:for="{{item.tiles}}" wx:for-item="t" wx:key="*this">{{tileNames[t]}}</text>
+      </view>
+    </view>
+    <!-- 正在选副露牌 -->
+    <view class="meld-buffer" wx:if="{{selectMode === 'meld'}}">
+      <text class="meld-buffer-hint">正在选{{meldTypeNames[meldType]}}的牌 ({{meldBuffer.length}}/{{meldType === 'open_kan' || meldType === 'closed_kan' ? 4 : 3}})</text>
+      <view class="selected-tiles" wx:if="{{meldBuffer.length > 0}}">
+        <text class="tile-text tile-{{t[1]}}" wx:for="{{meldBuffer}}" wx:for-item="t" wx:key="index">{{tileNames[t]}}</text>
+      </view>
+      <view class="meld-actions">
+        <text class="cancel-btn" bindtap="cancelMeld">取消</text>
+      </view>
+    </view>
+    <!-- 添加副露按钮 -->
+    <view class="meld-add-btns" wx:if="{{selectMode !== 'meld' && melds.length < 4}}">
+      <view class="meld-add-btn" data-type="chi" bindtap="startMeld">+吃</view>
+      <view class="meld-add-btn" data-type="pon" bindtap="startMeld">+碰</view>
+      <view class="meld-add-btn" data-type="open_kan" bindtap="startMeld">+明杠</view>
+      <view class="meld-add-btn" data-type="closed_kan" bindtap="startMeld">+暗杠</view>
     </view>
   </view>
 
@@ -35,8 +66,8 @@
   <!-- 选牌模式切换 -->
   <view class="mode-switch">
     <view class="toggle-group">
-      <view class="toggle-btn {{!selectingDora ? 'active' : ''}}" bindtap="toggleDoraMode">选手牌</view>
-      <view class="toggle-btn {{selectingDora ? 'active-dora' : ''}}" bindtap="toggleDoraMode">选宝牌</view>
+      <view class="toggle-btn {{selectMode === 'hand' ? 'active' : ''}}" data-mode="hand" bindtap="setSelectMode">选手牌</view>
+      <view class="toggle-btn {{selectMode === 'dora' ? 'active-dora' : ''}}" data-mode="dora" bindtap="setSelectMode">选宝牌</view>
     </view>
   </view>
 
@@ -93,6 +124,13 @@
         </view>
       </view>
       <view class="condition-row">
+        <text class="condition-label">庄/闲</text>
+        <view class="toggle-group">
+          <view class="toggle-btn {{isParent ? 'active' : ''}}" bindtap="toggleParent">庄家</view>
+          <view class="toggle-btn {{!isParent ? 'active' : ''}}" bindtap="toggleParent">闲家</view>
+        </view>
+      </view>
+      <view class="condition-row">
         <text class="condition-label">自风</text>
         <view class="toggle-group">
           <view class="toggle-btn {{seatWind === index ? 'active' : ''}}"
@@ -113,7 +151,7 @@
 
   <!-- 计算按钮 -->
   <button class="calc-btn" bindtap="calculate" loading="{{loading}}"
-    disabled="{{selectedTiles.length < 13}}">
+    disabled="{{selectedTiles.length < (14 - melds.length * 3 - 1)}}">
     计算番型
   </button>
 
@@ -131,7 +169,9 @@
     </view>
     <view class="result-section" wx:if="{{result.total_han > 0}}">
       <text class="result-title">得分</text>
-      <text class="total-score">{{result.total_han}}番 — {{result.score.RonTotal}}点</text>
+      <text class="total-score" wx:if="{{!isTsumo}}">{{result.total_han}}番 — {{result.score.RonTotal}}点</text>
+      <text class="total-score" wx:if="{{isTsumo && isParent}}">{{result.total_han}}番 — 自摸 {{result.score.TsumoFromChild}}点∀</text>
+      <text class="total-score" wx:if="{{isTsumo && !isParent}}">{{result.total_han}}番 — 自摸 {{result.score.TsumoFromParent}}/{{result.score.TsumoFromChild}}点</text>
     </view>
   </view>
 
