@@ -46,7 +46,7 @@ func (h *RecognizeHandler) Handle(c *gin.Context) {
 
 	tiles, err := h.vision.RecognizeTiles(c.Request.Context(), imageData)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "recognition failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "识别失败: " + err.Error()})
 		return
 	}
 

@@ -33,35 +33,37 @@ func NewQwenVisionService(apiKey, endpoint, model string) *QwenVisionService {
 	}
 }
 
-type qwenRequest struct {
-	Model string        `json:"model"`
-	Input []qwenMessage `json:"input"`
+type chatRequest struct {
+	Model    string        `json:"model"`
+	Messages []chatMessage `json:"messages"`
 }
 
-type qwenMessage struct {
-	Role    string        `json:"role"`
-	Content []qwenContent `json:"content"`
+type chatMessage struct {
+	Role    string      `json:"role"`
+	Content interface{} `json:"content"`
 }
 
-type qwenContent struct {
-	Type     string `json:"type"`
-	Text     string `json:"text,omitempty"`
-	ImageURL string `json:"image_url,omitempty"`
+type chatContentPart struct {
+	Type     string    `json:"type"`
+	Text     string    `json:"text,omitempty"`
+	ImageURL *imageURL `json:"image_url,omitempty"`
 }
 
-type qwenResponse struct {
-	Output []qwenOutputItem `json:"output"`
-	Error  *qwenError       `json:"error,omitempty"`
+type imageURL struct {
+	URL string `json:"url"`
 }
 
-type qwenOutputItem struct {
-	Type    string              `json:"type"`
-	Content []qwenOutputContent `json:"content,omitempty"`
+type chatResponse struct {
+	Choices []chatChoice `json:"choices"`
+	Error   *qwenError   `json:"error,omitempty"`
 }
 
-type qwenOutputContent struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+type chatChoice struct {
+	Message chatRespMessage `json:"message"`
+}
+
+type chatRespMessage struct {
+	Content string `json:"content"`
 }
 
 type qwenError struct {
@@ -89,14 +91,14 @@ func (s *QwenVisionService) RecognizeTiles(ctx context.Context, image []byte) ([
 	imageBase64 := base64.StdEncoding.EncodeToString(image)
 	dataURL := "data:image/jpeg;base64," + imageBase64
 
-	reqBody := qwenRequest{
+	reqBody := chatRequest{
 		Model: s.model,
-		Input: []qwenMessage{
+		Messages: []chatMessage{
 			{
 				Role: "user",
-				Content: []qwenContent{
-					{Type: "input_text", Text: tileRecognitionPrompt},
-					{Type: "input_image", ImageURL: dataURL},
+				Content: []chatContentPart{
+					{Type: "text", Text: tileRecognitionPrompt},
+					{Type: "image_url", ImageURL: &imageURL{URL: dataURL}},
 				},
 			},
 		},
@@ -107,7 +109,7 @@ func (s *QwenVisionService) RecognizeTiles(ctx context.Context, image []byte) ([
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	url := strings.TrimRight(s.endpoint, "/") + "/responses"
+	url := strings.TrimRight(s.endpoint, "/") + "/chat/completions"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
@@ -130,18 +132,22 @@ func (s *QwenVisionService) RecognizeTiles(ctx context.Context, image []byte) ([
 		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var qwenResp qwenResponse
-	if err := json.Unmarshal(body, &qwenResp); err != nil {
+	var chatResp chatResponse
+	if err := json.Unmarshal(body, &chatResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response: %w", err)
 	}
 
-	if qwenResp.Error != nil {
-		return nil, fmt.Errorf("API error [%s]: %s", qwenResp.Error.Code, qwenResp.Error.Message)
+	if chatResp.Error != nil {
+		return nil, fmt.Errorf("API error [%s]: %s", chatResp.Error.Code, chatResp.Error.Message)
 	}
 
-	tileStr := extractTileString(qwenResp)
+	if len(chatResp.Choices) == 0 {
+		return nil, fmt.Errorf("no choices in response")
+	}
+
+	tileStr := cleanTileString(chatResp.Choices[0].Message.Content)
 	if tileStr == "" {
-		return nil, fmt.Errorf("no tile result in response")
+		return nil, fmt.Errorf("no tile result in response, raw: %s", chatResp.Choices[0].Message.Content)
 	}
 
 	tiles, err := mahjong.ParseTiles(tileStr)
@@ -150,19 +156,6 @@ func (s *QwenVisionService) RecognizeTiles(ctx context.Context, image []byte) ([
 	}
 
 	return tiles, nil
-}
-
-func extractTileString(resp qwenResponse) string {
-	for _, item := range resp.Output {
-		if item.Type == "message" {
-			for _, content := range item.Content {
-				if content.Type == "output_text" {
-					return cleanTileString(content.Text)
-				}
-			}
-		}
-	}
-	return ""
 }
 
 func cleanTileString(s string) string {
