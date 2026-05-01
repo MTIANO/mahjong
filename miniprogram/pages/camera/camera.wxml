@@ -1,0 +1,43 @@
+<view class="container">
+  <view class="upload-area" wx:if="{{!imagePath}}">
+    <view class="upload-btn" bindtap="chooseImage">
+      <text class="upload-icon">📷</text>
+      <text class="upload-text">拍照或选择图片</text>
+      <text class="upload-hint">将手牌拍照上传，自动识别并计算番型</text>
+    </view>
+  </view>
+
+  <view class="preview" wx:if="{{imagePath}}">
+    <image class="preview-image" src="{{imagePath}}" mode="aspectFit" />
+    <view class="action-bar">
+      <button class="btn btn-secondary" bindtap="chooseImage">重新选择</button>
+      <button class="btn btn-primary" bindtap="recognize" loading="{{loading}}">开始识别</button>
+    </view>
+  </view>
+
+  <view class="result" wx:if="{{result}}">
+    <view class="result-section">
+      <text class="section-title">识别结果</text>
+      <view class="tiles-display">
+        <text class="tile-item" wx:for="{{result.tiles}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+
+    <view class="result-section" wx:if="{{result.yaku.length > 0}}">
+      <text class="section-title">番型</text>
+      <view class="yaku-item" wx:for="{{result.yaku}}" wx:key="name">
+        <text>{{item.name}}</text>
+        <text class="yaku-han">{{item.han}}番</text>
+      </view>
+    </view>
+
+    <view class="result-section">
+      <text class="section-title">得分</text>
+      <text class="total-score">{{result.total_han}}番 — {{result.score.RonTotal}}点</text>
+    </view>
+  </view>
+
+  <view class="error" wx:if="{{error}}">
+    <text>{{error}}</text>
+  </view>
+</view>
