@@ -1,0 +1,32 @@
+<view class="container">
+  <view class="header">
+    <text class="title">MTiano</text>
+    <text class="subtitle">日麻工具集合</text>
+  </view>
+
+  <view class="menu">
+    <navigator url="/pages/yaku/yaku" class="menu-item">
+      <text class="menu-icon">📋</text>
+      <view class="menu-text">
+        <text class="menu-title">番型表</text>
+        <text class="menu-desc">查询所有番型及条件</text>
+      </view>
+    </navigator>
+
+    <navigator url="/pages/score/score" class="menu-item">
+      <text class="menu-icon">🔢</text>
+      <view class="menu-text">
+        <text class="menu-title">点数表</text>
+        <text class="menu-desc">番数×符数快速算点</text>
+      </view>
+    </navigator>
+
+    <navigator url="/pages/camera/camera" class="menu-item">
+      <text class="menu-icon">📷</text>
+      <view class="menu-text">
+        <text class="menu-title">拍照识别</text>
+        <text class="menu-desc">拍照自动算番得分</text>
+      </view>
+    </navigator>
+  </view>
+</view>
