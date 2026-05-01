@@ -1,3 +1,4 @@
 flask
-ultralytics
+onnxruntime
 pillow
+numpy
