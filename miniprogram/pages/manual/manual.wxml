@@ -1,0 +1,142 @@
+<view class="container">
+  <!-- 已选手牌 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">手牌 ({{selectedTiles.length}}/14)</text>
+      <text class="clear-btn" bindtap="clearTiles" wx:if="{{selectedTiles.length > 0}}">清空</text>
+    </view>
+    <view class="selected-tiles" wx:if="{{selectedTiles.length > 0}}">
+      <view class="selected-tile" wx:for="{{selectedTiles}}" wx:key="index"
+        data-index="{{index}}" bindtap="removeTile">
+        <text class="tile-text tile-{{item[1]}}">{{tileNames[item]}}</text>
+      </view>
+    </view>
+    <view class="empty-hint" wx:else>
+      <text>点击下方麻将牌添加手牌</text>
+    </view>
+  </view>
+
+  <!-- 宝牌 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">宝牌 ({{doraTiles.length}}/5)</text>
+    </view>
+    <view class="selected-tiles" wx:if="{{doraTiles.length > 0}}">
+      <view class="selected-tile" wx:for="{{doraTiles}}" wx:key="index"
+        data-index="{{index}}" bindtap="removeDora">
+        <text class="tile-text tile-{{item[1]}}">{{tileNames[item]}}</text>
+      </view>
+    </view>
+    <view class="empty-hint" wx:else>
+      <text>切换到宝牌模式后点击牌添加</text>
+    </view>
+  </view>
+
+  <!-- 选牌模式切换 -->
+  <view class="mode-switch">
+    <view class="toggle-group">
+      <view class="toggle-btn {{!selectingDora ? 'active' : ''}}" bindtap="toggleDoraMode">选手牌</view>
+      <view class="toggle-btn {{selectingDora ? 'active-dora' : ''}}" bindtap="toggleDoraMode">选宝牌</view>
+    </view>
+  </view>
+
+  <!-- 牌选择区 -->
+  <view class="section">
+    <text class="section-title suit-label suit-m">万子</text>
+    <view class="tile-grid">
+      <view class="tile-btn tile-m" wx:for="{{manTiles}}" wx:key="*this"
+        data-tile="{{item}}" bindtap="addTile">
+        <text>{{tileNames[item]}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <text class="section-title suit-label suit-p">筒子</text>
+    <view class="tile-grid">
+      <view class="tile-btn tile-p" wx:for="{{pinTiles}}" wx:key="*this"
+        data-tile="{{item}}" bindtap="addTile">
+        <text>{{tileNames[item]}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <text class="section-title suit-label suit-s">索子</text>
+    <view class="tile-grid">
+      <view class="tile-btn tile-s" wx:for="{{souTiles}}" wx:key="*this"
+        data-tile="{{item}}" bindtap="addTile">
+        <text>{{tileNames[item]}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <text class="section-title suit-label suit-z">字牌</text>
+    <view class="tile-grid">
+      <view class="tile-btn tile-z" wx:for="{{honorTiles}}" wx:key="*this"
+        data-tile="{{item}}" bindtap="addTile">
+        <text>{{tileNames[item]}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 和牌条件 -->
+  <view class="section">
+    <text class="section-title">和牌条件</text>
+    <view class="conditions">
+      <view class="condition-row">
+        <text class="condition-label">和牌方式</text>
+        <view class="toggle-group">
+          <view class="toggle-btn {{isTsumo ? 'active' : ''}}" bindtap="toggleTsumo">自摸</view>
+          <view class="toggle-btn {{!isTsumo ? 'active' : ''}}" bindtap="toggleTsumo">荣和</view>
+        </view>
+      </view>
+      <view class="condition-row">
+        <text class="condition-label">自风</text>
+        <view class="toggle-group">
+          <view class="toggle-btn {{seatWind === index ? 'active' : ''}}"
+            wx:for="{{winds}}" wx:key="index"
+            data-wind="{{index}}" bindtap="setSeatWind">{{item}}</view>
+        </view>
+      </view>
+      <view class="condition-row">
+        <text class="condition-label">场风</text>
+        <view class="toggle-group">
+          <view class="toggle-btn {{roundWind === index ? 'active' : ''}}"
+            wx:for="{{winds}}" wx:key="index"
+            data-wind="{{index}}" bindtap="setRoundWind">{{item}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 计算按钮 -->
+  <button class="calc-btn" bindtap="calculate" loading="{{loading}}"
+    disabled="{{selectedTiles.length < 13}}">
+    计算番型
+  </button>
+
+  <!-- 结果展示 -->
+  <view class="result" wx:if="{{result}}">
+    <view class="result-section" wx:if="{{result.yaku.length > 0}}">
+      <text class="result-title">番型</text>
+      <view class="yaku-item" wx:for="{{result.yaku}}" wx:key="name">
+        <text>{{item.name}}</text>
+        <text class="yaku-han">{{item.han}}番</text>
+      </view>
+    </view>
+    <view class="result-section" wx:if="{{result.yaku.length === 0}}">
+      <text class="result-title">无役</text>
+    </view>
+    <view class="result-section" wx:if="{{result.total_han > 0}}">
+      <text class="result-title">得分</text>
+      <text class="total-score">{{result.total_han}}番 — {{result.score.RonTotal}}点</text>
+    </view>
+  </view>
+
+  <!-- 错误提示 -->
+  <view class="error" wx:if="{{error}}">
+    <text>{{error}}</text>
+  </view>
+</view>

@@ -28,5 +28,13 @@
         <text class="menu-desc">拍照自动算番得分</text>
       </view>
     </navigator>
+
+    <navigator url="/pages/manual/manual" open-type="switchTab" class="menu-item">
+      <text class="menu-icon">🀄</text>
+      <view class="menu-text">
+        <text class="menu-title">手动算番</text>
+        <text class="menu-desc">选牌计算番型得分</text>
+      </view>
+    </navigator>
   </view>
 </view>

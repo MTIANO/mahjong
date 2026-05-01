@@ -3,7 +3,8 @@
     "pages/index/index",
     "pages/yaku/yaku",
     "pages/score/score",
-    "pages/camera/camera"
+    "pages/camera/camera",
+    "pages/manual/manual"
   ],
   "window": {
     "navigationBarBackgroundColor": "#1a1a2e",
@@ -30,6 +31,10 @@
       {
         "pagePath": "pages/camera/camera",
         "text": "识别"
+      },
+      {
+        "pagePath": "pages/manual/manual",
+        "text": "算番"
       }
     ]
   },

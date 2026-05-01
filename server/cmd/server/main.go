@@ -31,6 +31,7 @@ func main() {
 
 	recognizeHandler := handler.NewRecognizeHandler(vision)
 	r.POST("/api/v1/recognize", recognizeHandler.Handle)
+	r.POST("/api/v1/calculate", handler.HandleCalculate)
 
 	if err := r.Run(cfg.Server.Port); err != nil {
 		log.Fatalf("failed to start server: %v", err)
