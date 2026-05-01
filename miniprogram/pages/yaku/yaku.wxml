@@ -1,0 +1,29 @@
+<view class="container">
+  <view class="search-bar">
+    <input class="search-input" placeholder="搜索番型..." bindinput="onSearch" value="{{searchText}}" />
+  </view>
+
+  <view class="category-tabs">
+    <view class="tab {{activeCategory === '' ? 'active' : ''}}" bindtap="onTabAll">全部</view>
+    <view class="tab {{activeCategory === item ? 'active' : ''}}"
+      wx:for="{{categories}}" wx:key="*this"
+      data-category="{{item}}" bindtap="onTabChange">
+      {{item}}
+    </view>
+  </view>
+
+  <view class="yaku-list">
+    <view class="yaku-card" wx:for="{{filteredYaku}}" wx:key="name">
+      <view class="yaku-header">
+        <text class="yaku-name">{{item.name}}</text>
+        <text class="yaku-name-jp">{{item.nameJp}}</text>
+        <view class="yaku-han">
+          <text class="han-badge">{{item.han}}番</text>
+          <text class="han-open" wx:if="{{item.hanOpen > 0}}">食下{{item.hanOpen}}番</text>
+          <text class="han-open closed-only" wx:if="{{item.hanOpen === 0}}">門前限定</text>
+        </view>
+      </view>
+      <text class="yaku-desc">{{item.description}}</text>
+    </view>
+  </view>
+</view>
