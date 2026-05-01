@@ -4,7 +4,7 @@ Page({
   data: {
     allYaku: yakuData,
     filteredYaku: yakuData,
-    categories: ['1番', '2番', '3番', '6番', '役満'],
+    categories: ['1番', '2番', '3番', '6番', '役满'],
     activeCategory: '',
     searchText: ''
   },

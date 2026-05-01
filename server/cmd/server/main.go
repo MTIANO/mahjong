@@ -17,6 +17,8 @@ func main() {
 
 	var vision service.VisionService
 	switch cfg.Vision.Provider {
+	case "qwen":
+		vision = service.NewQwenVisionService(cfg.Vision.APIKey, cfg.Vision.Endpoint, cfg.Vision.Model)
 	default:
 		vision = service.NewStubVisionService()
 	}

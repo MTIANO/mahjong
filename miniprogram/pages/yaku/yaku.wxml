@@ -20,7 +20,7 @@
         <view class="yaku-han">
           <text class="han-badge">{{item.han}}番</text>
           <text class="han-open" wx:if="{{item.hanOpen > 0}}">副露{{item.hanOpen}}番</text>
-          <text class="han-open closed-only" wx:if="{{item.hanOpen === 0}}">门前限定</text>
+          <text class="han-open closed-only" wx:if="{{item.hanOpen === 0}}">门清限定</text>
         </view>
       </view>
       <text class="yaku-desc">{{item.description}}</text>

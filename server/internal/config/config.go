@@ -19,6 +19,7 @@ type VisionConfig struct {
 	Provider string `yaml:"provider"`
 	APIKey   string `yaml:"api_key"`
 	Endpoint string `yaml:"endpoint"`
+	Model    string `yaml:"model"`
 }
 
 func Load(path string) (*Config, error) {

@@ -2,6 +2,7 @@ server:
   port: ":9091"
 
 vision:
-  provider: "stub"
-  api_key: ""
-  endpoint: ""
+  provider: "qwen"
+  api_key: "sk-c8454d49077c4827a2919b023283d588"
+  endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  model: "qwen-vl-max"
