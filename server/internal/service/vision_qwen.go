@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -24,7 +25,7 @@ func NewQwenVisionService(apiKey, endpoint, model string) *QwenVisionService {
 		endpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 	}
 	if model == "" {
-		model = "qwen-vl-max"
+		model = "qwen3.6-plus-2026-04-02"
 	}
 	return &QwenVisionService{
 		apiKey:   apiKey,
@@ -33,37 +34,36 @@ func NewQwenVisionService(apiKey, endpoint, model string) *QwenVisionService {
 	}
 }
 
-type chatRequest struct {
-	Model    string        `json:"model"`
-	Messages []chatMessage `json:"messages"`
+type responsesRequest struct {
+	Model string      `json:"model"`
+	Input []inputItem `json:"input"`
 }
 
-type chatMessage struct {
-	Role    string      `json:"role"`
-	Content interface{} `json:"content"`
+type inputItem struct {
+	Role    string        `json:"role"`
+	Content []contentPart `json:"content"`
 }
 
-type chatContentPart struct {
-	Type     string    `json:"type"`
-	Text     string    `json:"text,omitempty"`
-	ImageURL *imageURL `json:"image_url,omitempty"`
+type contentPart struct {
+	Type     string `json:"type"`
+	Text     string `json:"text,omitempty"`
+	ImageURL string `json:"image_url,omitempty"`
 }
 
-type imageURL struct {
-	URL string `json:"url"`
+type responsesResponse struct {
+	ID     string       `json:"id"`
+	Output []outputItem `json:"output"`
+	Error  *qwenError   `json:"error,omitempty"`
 }
 
-type chatResponse struct {
-	Choices []chatChoice `json:"choices"`
-	Error   *qwenError   `json:"error,omitempty"`
+type outputItem struct {
+	Type    string          `json:"type"`
+	Content []outputContent `json:"content,omitempty"`
 }
 
-type chatChoice struct {
-	Message chatRespMessage `json:"message"`
-}
-
-type chatRespMessage struct {
-	Content string `json:"content"`
+type outputContent struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
 }
 
 type qwenError struct {
@@ -88,17 +88,19 @@ const tileRecognitionPrompt = `你是一个日本麻将牌识别专家。请识�
 请识别图片中的所有麻将牌：`
 
 func (s *QwenVisionService) RecognizeTiles(ctx context.Context, image []byte) ([]mahjong.Tile, error) {
+	log.Printf("[Qwen] 开始识别，图片大小: %d bytes", len(image))
+
 	imageBase64 := base64.StdEncoding.EncodeToString(image)
 	dataURL := "data:image/jpeg;base64," + imageBase64
 
-	reqBody := chatRequest{
+	reqBody := responsesRequest{
 		Model: s.model,
-		Messages: []chatMessage{
+		Input: []inputItem{
 			{
 				Role: "user",
-				Content: []chatContentPart{
-					{Type: "text", Text: tileRecognitionPrompt},
-					{Type: "image_url", ImageURL: &imageURL{URL: dataURL}},
+				Content: []contentPart{
+					{Type: "input_text", Text: tileRecognitionPrompt},
+					{Type: "input_image", ImageURL: dataURL},
 				},
 			},
 		},
@@ -109,7 +111,9 @@ func (s *QwenVisionService) RecognizeTiles(ctx context.Context, image []byte) ([
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	url := strings.TrimRight(s.endpoint, "/") + "/chat/completions"
+	url := strings.TrimRight(s.endpoint, "/") + "/responses"
+	log.Printf("[Qwen] 请求URL: %s, 模型: %s", url, s.model)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
@@ -119,6 +123,7 @@ func (s *QwenVisionService) RecognizeTiles(ctx context.Context, image []byte) ([
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		log.Printf("[Qwen] 请求失败: %v", err)
 		return nil, fmt.Errorf("send request: %w", err)
 	}
 	defer resp.Body.Close()
@@ -128,34 +133,53 @@ func (s *QwenVisionService) RecognizeTiles(ctx context.Context, image []byte) ([
 		return nil, fmt.Errorf("read response: %w", err)
 	}
 
+	log.Printf("[Qwen] 响应状态: %d, body长度: %d", resp.StatusCode, len(body))
+
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("[Qwen] API错误响应: %s", string(body))
 		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var chatResp chatResponse
-	if err := json.Unmarshal(body, &chatResp); err != nil {
+	var qwenResp responsesResponse
+	if err := json.Unmarshal(body, &qwenResp); err != nil {
+		log.Printf("[Qwen] 解析响应失败: %v, body: %s", err, string(body))
 		return nil, fmt.Errorf("unmarshal response: %w", err)
 	}
 
-	if chatResp.Error != nil {
-		return nil, fmt.Errorf("API error [%s]: %s", chatResp.Error.Code, chatResp.Error.Message)
+	if qwenResp.Error != nil {
+		log.Printf("[Qwen] API返回错误: [%s] %s", qwenResp.Error.Code, qwenResp.Error.Message)
+		return nil, fmt.Errorf("API error [%s]: %s", qwenResp.Error.Code, qwenResp.Error.Message)
 	}
 
-	if len(chatResp.Choices) == 0 {
-		return nil, fmt.Errorf("no choices in response")
-	}
+	tileStr := extractTileString(qwenResp)
+	log.Printf("[Qwen] 提取到牌型字符串: %q", tileStr)
 
-	tileStr := cleanTileString(chatResp.Choices[0].Message.Content)
 	if tileStr == "" {
-		return nil, fmt.Errorf("no tile result in response, raw: %s", chatResp.Choices[0].Message.Content)
+		log.Printf("[Qwen] 未提取到牌型，原始output: %+v", qwenResp.Output)
+		return nil, fmt.Errorf("no tile result in response")
 	}
 
 	tiles, err := mahjong.ParseTiles(tileStr)
 	if err != nil {
+		log.Printf("[Qwen] 解析牌型失败: %v", err)
 		return nil, fmt.Errorf("parse tiles %q: %w", tileStr, err)
 	}
 
+	log.Printf("[Qwen] 识别成功，共 %d 张牌: %s", len(tiles), tileStr)
 	return tiles, nil
+}
+
+func extractTileString(resp responsesResponse) string {
+	for _, item := range resp.Output {
+		if item.Type == "message" {
+			for _, content := range item.Content {
+				if content.Type == "output_text" {
+					return cleanTileString(content.Text)
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func cleanTileString(s string) string {
