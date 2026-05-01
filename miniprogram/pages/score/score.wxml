@@ -1,0 +1,39 @@
+<view class="container">
+  <view class="selector">
+    <view class="selector-row">
+      <text class="label">番数:</text>
+      <picker mode="selector" range="{{hanOptions}}" value="{{hanIndex}}" bindchange="onHanChange">
+        <view class="picker">{{hanOptions[hanIndex]}}番</view>
+      </picker>
+    </view>
+    <view class="selector-row" wx:if="{{showFu}}">
+      <text class="label">符数:</text>
+      <picker mode="selector" range="{{fuOptions}}" value="{{fuIndex}}" bindchange="onFuChange">
+        <view class="picker">{{fuOptions[fuIndex]}}符</view>
+      </picker>
+    </view>
+    <view class="selector-row">
+      <text class="label">庄家:</text>
+      <switch checked="{{isParent}}" bindchange="onParentChange" color="#1a1a2e" />
+    </view>
+  </view>
+
+  <view class="result" wx:if="{{score}}">
+    <view class="score-name" wx:if="{{score.name}}">{{score.name}}</view>
+
+    <view class="score-section">
+      <text class="section-title">荣和 (ロン)</text>
+      <text class="score-value">{{isParent ? score.parentRon : score.childRon}} 点</text>
+    </view>
+
+    <view class="score-section">
+      <text class="section-title">自摸 (ツモ)</text>
+      <block wx:if="{{isParent}}">
+        <text class="score-value">各家 {{score.parentTsumo}} 点</text>
+      </block>
+      <block wx:else>
+        <text class="score-value">亲家 {{score.childTsumo[0]}} / 子家 {{score.childTsumo[1]}} 点</text>
+      </block>
+    </view>
+  </view>
+</view>
