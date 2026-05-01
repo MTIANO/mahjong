@@ -24,8 +24,25 @@
     "useMultiFrameRuntime": true,
     "showShadowRootInWxmlPanel": true,
     "packNpmManually": false,
-    "packNpmRelationList": []
+    "packNpmRelationList": [],
+    "compileWorklet": false,
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    },
+    "disableSWC": true
   },
   "compileType": "miniprogram",
-  "condition": {}
+  "condition": {},
+  "appid": "wxf09f11a3eccbaac1",
+  "simulatorPluginLibVersion": {},
+  "editorSetting": {}
 }

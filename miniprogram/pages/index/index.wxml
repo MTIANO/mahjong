@@ -5,7 +5,7 @@
   </view>
 
   <view class="menu">
-    <navigator url="/pages/yaku/yaku" class="menu-item">
+    <navigator url="/pages/yaku/yaku" open-type="switchTab" class="menu-item">
       <text class="menu-icon">📋</text>
       <view class="menu-text">
         <text class="menu-title">番型表</text>
@@ -13,7 +13,7 @@
       </view>
     </navigator>
 
-    <navigator url="/pages/score/score" class="menu-item">
+    <navigator url="/pages/score/score" open-type="switchTab" class="menu-item">
       <text class="menu-icon">🔢</text>
       <view class="menu-text">
         <text class="menu-title">点数表</text>
@@ -21,7 +21,7 @@
       </view>
     </navigator>
 
-    <navigator url="/pages/camera/camera" class="menu-item">
+    <navigator url="/pages/camera/camera" open-type="switchTab" class="menu-item">
       <text class="menu-icon">📷</text>
       <view class="menu-text">
         <text class="menu-title">拍照识别</text>

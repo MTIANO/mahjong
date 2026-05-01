@@ -1,5 +1,5 @@
 App({
   globalData: {
-    serverUrl: 'http://localhost:8080'
+    serverUrl: 'https://mahjong.czw-mtiano.cn'
   }
 })
