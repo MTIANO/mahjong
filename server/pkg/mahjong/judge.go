@@ -654,7 +654,7 @@ func checkYakuhai(hand *Hand, allTriplets [][]Tile, closed bool) []YakuResult {
 			results = append(results, makeResult(yaku, closed))
 		}
 		roundNum := int(hand.RoundWind) + 1
-		if t.Number == roundNum && t.Number != windNum {
+		if t.Number == roundNum {
 			yaku := []YakuType{YakuBakazeTon, YakuBakazeNan, YakuBakazeXia, YakuBakazePei}[hand.RoundWind]
 			results = append(results, makeResult(yaku, closed))
 		}

@@ -9,7 +9,9 @@ type Decomposition struct {
 }
 
 func Decompose(tiles []Tile) []Decomposition {
-	if len(tiles) != 14 {
+	n := len(tiles)
+	// 手牌数必须是 3k+2 (14, 11, 8, 5, 2)
+	if n < 2 || (n-2)%3 != 0 {
 		return nil
 	}
 

@@ -280,6 +280,19 @@
   margin-top: 4rpx;
 }
 
+.result-error {
+  background: #fff3f3;
+  border: 1rpx solid #ffccc7;
+}
+
+.no-yaku-text {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #e74c3c;
+  text-align: center;
+  display: block;
+}
+
 .error {
   background: #fee;
   border-radius: 12rpx;
