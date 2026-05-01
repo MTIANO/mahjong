@@ -35,8 +35,13 @@ func NewQwenVisionService(apiKey, endpoint, model string) *QwenVisionService {
 }
 
 type responsesRequest struct {
-	Model string      `json:"model"`
-	Input []inputItem `json:"input"`
+	Model     string      `json:"model"`
+	Input     []inputItem `json:"input"`
+	Reasoning *reasoning  `json:"reasoning,omitempty"`
+}
+
+type reasoning struct {
+	Effort string `json:"effort"`
 }
 
 type inputItem struct {
@@ -104,6 +109,7 @@ func (s *QwenVisionService) RecognizeTiles(ctx context.Context, image []byte) ([
 				},
 			},
 		},
+		Reasoning: &reasoning{Effort: "none"},
 	}
 
 	jsonData, err := json.Marshal(reqBody)
