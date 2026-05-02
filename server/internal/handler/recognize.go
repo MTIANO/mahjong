@@ -62,7 +62,12 @@ func (h *RecognizeHandler) Handle(c *gin.Context) {
 		}
 	}
 
-	//
+	// 赤宝牌加番
+	if yolo, ok := h.vision.(*service.YoloVisionService); ok && yolo.LastRedDora > 0 {
+		totalHan += yolo.LastRedDora
+		yakuResp = append(yakuResp, YakuResponse{Name: "赤宝牌", Han: yolo.LastRedDora})
+	}
+
 	score := mahjong.CalculateScore(totalHan, 30, false, true)
 
 	tileStrs := make([]string, len(tiles))

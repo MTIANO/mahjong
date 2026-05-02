@@ -10,7 +10,7 @@
 |------|------|
 | 前端 | 微信小程序原生（WXML/WXSS/JS） |
 | 后端 | Go + Gin |
-| AI 识别 | 千问 (qwen3.6-plus) Responses API |
+| AI 识别 | YOLOv11 目标检测（Python 微服务）+ 千问视觉备选 |
 | 部署 | 宝塔面板 + systemd + Nginx 反代 |
 | 域名 | https://mahjong.czw-mtiano.cn |
 
@@ -40,7 +40,15 @@ mahjong/
 │   │   │   └── calculate.go    # POST /api/v1/calculate
 │   │   └── service/            # AI 视觉服务
 │   │       ├── vision.go       # VisionService 接口
-│   │       └── vision_qwen.go  # 千问实现
+│   │       ├── vision_yolo.go  # YOLO 推理服务调用
+│   │       └── vision_qwen.go  # 千问备选实现
+│   ├── yolo_service/           # Python YOLO 推理微服务
+│   │   ├── app.py              # Flask 服务（端口 5000）
+│   │   ├── convert_model.py    # .pt → .onnx 转换脚本
+│   │   ├── download_model.py   # 模型下载脚本
+│   │   ├── requirements.txt    # Python 依赖
+│   │   └── models/             # 模型权重文件
+│   │       └── yolo11s_best.onnx
 │   └── pkg/mahjong/           # 核心麻将引擎
 │       ├── tile.go             # 牌模型 & ParseTiles
 │       ├── hand.go             # Hand/Meld 结构
@@ -229,6 +237,10 @@ go run cmd/server/main.go
 go build ./cmd/server/
 go test ./...
 
+systemctl status yolo-mahjong    # 查看状态
+systemctl restart yolo-mahjong   # 重启
+systemctl stop yolo-mahjong      # 停止
+journalctl -u yolo-mahjong -f    # 查看实时日志
 # 前端
 # 用微信开发者工具打开 miniprogram/ 目录
 ```
@@ -243,3 +255,150 @@ go test ./...
 | 字牌 | z | `1z`=東, `2z`=南, `3z`=西, `4z`=北, `5z`=白, `6z`=發, `7z`=中 |
 
 紧凑写法：`123m456p789s11z` = 一二三万 + 四五六筒 + 七八九索 + 東東
+
+---
+
+## YOLO 麻将牌识别模块
+
+### 概述
+
+使用 YOLOv11 目标检测模型识别图片中的麻将牌，部署为独立 Python 微服务，Go 后端通过 HTTP 调用。
+
+### 模型信息
+
+| 项目 | 说明 |
+|------|------|
+| 来源 | [nikmomo/Mahjong-YOLO](https://github.com/nikmomo/Mahjong-YOLO) |
+| 模型 | YOLOv11s (ONNX 格式, ~19MB) |
+| 精度 | mAP50 = 0.881 |
+| 类别 | 38 类麻将牌 |
+| 推理框架 | ONNX Runtime (CPU) |
+
+### 38 类标签
+
+```
+1m 2m 3m 4m 5m 6m 7m 8m 9m    (万子)
+1p 2p 3p 4p 5p 6p 7p 8p 9p    (筒子)
+1s 2s 3s 4s 5s 6s 7s 8s 9s    (索子)
+1z 2z 3z 4z 5z 6z 7z           (字牌: 東南西北白發中)
+0m 0p 0s                        (赤宝牌: 赤五万/筒/索)
+UNKNOWN                          (未知，过滤掉)
+```
+
+### 架构
+
+```
+小程序 → Go 后端 (POST /api/v1/recognize)
+              ↓
+       vision_yolo.go (HTTP multipart POST)
+              ↓
+       Python Flask (POST /predict, 端口 5000)
+              ↓
+       ONNX Runtime 推理
+              ↓
+       返回 {"tiles": "123m456p...", "red_dora": 1}
+```
+
+### 推理流程
+
+1. **预处理**: 图片缩放到 640×640，保持比例，灰色填充边缘
+2. **推理**: ONNX Runtime 加载模型，输入 `[1, 3, 640, 640]`，输出 `[1, 42, 8400]`
+3. **后处理**:
+   - 转置输出为 `[8400, 42]`（8400个检测框 × (4坐标 + 38类别分数)）
+   - 置信度过滤（阈值 0.5）
+   - NMS 去重（IoU 阈值 0.5）
+   - 按 x 坐标从左到右排序
+   - 赤五（`0m/0p/0s`）映射为 `5m/5p/5s` 并标记为赤宝牌
+4. **输出**: 拼接为紧凑记法字符串 + 赤宝牌数量
+
+### 赤宝牌处理
+
+- 模型类别 `0m/0p/0s` 代表赤五万/筒/索
+- 识别后映射为普通 `5m/5p/5s`（牌面功能相同）
+- 同时记录赤宝牌数量 `red_dora`，Go 后端自动计入加番
+
+### 部署步骤
+
+```bash
+# 1. 本地转换模型（需要 ultralytics + torch，Mac/PC 上执行）
+cd server/yolo_service
+python3 -m venv venv && source venv/bin/activate
+pip install ultralytics
+python download_model.py      # 下载 .pt 权重
+python convert_model.py       # 转换为 .onnx
+
+# 2. 上传 .onnx 到服务器
+scp models/yolo11s_best.onnx root@服务器:/www/wwwroot/mtiano/mahjong/server/yolo_service/models/
+
+# 3. 服务器安装依赖（Python 3.8+）
+python3.10 -m pip install flask onnxruntime pillow numpy -i https://mirrors.aliyun.com/pypi/simple/
+
+# 4. 启动服务
+python3.10 app.py
+```
+
+### systemd 服务管理
+
+服务文件: `/etc/systemd/system/yolo-mahjong.service`
+
+```ini
+[Unit]
+Description=Mahjong YOLO Detection Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/www/wwwroot/mtiano/mahjong/server/yolo_service
+ExecStart=/usr/local/bin/python3.10 app.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+管理命令:
+
+```bash
+systemctl start yolo-mahjong     # 启动
+systemctl stop yolo-mahjong      # 停止
+systemctl restart yolo-mahjong   # 重启
+systemctl status yolo-mahjong    # 状态
+journalctl -u yolo-mahjong -f   # 查看日志
+```
+
+### Go 后端配置
+
+`server/configs/config.yaml`:
+
+```yaml
+vision:
+  provider: "yolo"
+  endpoint: "http://localhost:5000"
+```
+
+切换回千问（备选）:
+
+```yaml
+vision:
+  provider: "qwen"
+  api_key: "your-api-key"
+  endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  model: "qwen3.6-plus-2026-04-02"
+```
+
+### API 测试
+
+```bash
+# 直接测试 Python 推理服务
+curl -X POST -F "image=@test.jpg" http://localhost:5000/predict
+
+# 测试 Go 后端完整流程
+curl -X POST -F "image=@test.jpg" https://mahjong.czw-mtiano.cn/api/v1/recognize
+```
+
+### 已知限制
+
+- 赤宝牌（赤五）识别率较低，与普通五外观差异小
+- 牌面遮挡或倾斜角度大时精度下降
+- 建议配合手动算番功能修正识别结果

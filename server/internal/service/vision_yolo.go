@@ -13,13 +13,15 @@ import (
 )
 
 type YoloVisionService struct {
-	endpoint string
-	client   *http.Client
+	endpoint    string
+	client      *http.Client
+	LastRedDora int
 }
 
 type yoloPredictResponse struct {
-	Tiles string `json:"tiles"`
-	Count int    `json:"count"`
+	Tiles   string `json:"tiles"`
+	Count   int    `json:"count"`
+	RedDora int    `json:"red_dora"`
 }
 
 func NewYoloVisionService(endpoint string) *YoloVisionService {
@@ -70,6 +72,8 @@ func (s *YoloVisionService) RecognizeTiles(ctx context.Context, image []byte) ([
 	if result.Tiles == "" {
 		return nil, fmt.Errorf("no tiles detected")
 	}
+
+	s.LastRedDora = result.RedDora
 
 	tiles, err := mahjong.ParseTiles(result.Tiles)
 	if err != nil {

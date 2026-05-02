@@ -88,12 +88,14 @@ def postprocess(output, scale, pad_x, pad_y, conf_threshold):
         if class_name == 'UNKNOWN':
             continue
 
+        is_red = class_name in RED_FIVE_MAP
         tile_name = RED_FIVE_MAP.get(class_name, class_name)
         detections.append({
             "tile": tile_name,
             "confidence": float(max_score),
             "x": float((x1 + x2) / 2),
-            "bbox": [float(x1), float(y1), float(x2), float(y2)]
+            "bbox": [float(x1), float(y1), float(x2), float(y2)],
+            "is_red": is_red
         })
 
     # NMS
@@ -166,11 +168,13 @@ def predict():
     print(f"[DEBUG] detections: {len(detections)}")
     tiles = [d["tile"] for d in detections]
     tile_string = build_tile_string(tiles)
+    red_dora_count = sum(1 for d in detections if d.get("is_red"))
 
     return jsonify({
         "tiles": tile_string,
         "count": len(tiles),
-        "detections": [{"tile": d["tile"], "confidence": round(d["confidence"], 3)} for d in detections]
+        "red_dora": red_dora_count,
+        "detections": [{"tile": d["tile"], "confidence": round(d["confidence"], 3), "is_red": d.get("is_red", False)} for d in detections]
     })
 
 
