@@ -12,7 +12,6 @@
 | 后端 | Go + Gin |
 | AI 识别 | YOLOv11 目标检测（Python 微服务）+ 千问视觉备选 |
 | 部署 | 宝塔面板 + systemd + Nginx 反代 |
-| 域名 | https://mahjong.czw-mtiano.cn |
 
 ### 目录结构
 
