@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/robfig/cron/v3"
 	"github.com/mtiano/server/internal/model"
 	"github.com/mtiano/server/internal/service"
+	"github.com/robfig/cron/v3"
 )
 
 type StockCron struct {
@@ -27,13 +27,14 @@ func NewStockCron(store *service.StockStore, stockData *service.StockDataService
 }
 
 func (sc *StockCron) Start() {
-	sc.scheduler.AddFunc("@every 1h", sc.analyzeWatchlistStocks)
-	sc.scheduler.AddFunc("@every 1h", sc.analyzeHotStocks)
+	// A股上午 9:30, 10:30, 11:30（周一至周五）
+	sc.scheduler.AddFunc("30 9-11 * * 1-5", sc.analyzeWatchlistStocks)
+	sc.scheduler.AddFunc("30 9-11 * * 1-5", sc.analyzeHotStocks)
+	// A股下午 13:00, 14:00, 15:00（周一至周五）
+	sc.scheduler.AddFunc("0 13-15 * * 1-5", sc.analyzeWatchlistStocks)
+	sc.scheduler.AddFunc("0 13-15 * * 1-5", sc.analyzeHotStocks)
 	sc.scheduler.Start()
-	log.Println("[Cron] stock analysis cron started")
-
-	go sc.analyzeWatchlistStocks()
-	go sc.analyzeHotStocks()
+	log.Println("[Cron] stock analysis cron started (A-share market hours only: 9:30-11:30, 13:00-15:00 weekdays)")
 }
 
 func (sc *StockCron) Stop() {
