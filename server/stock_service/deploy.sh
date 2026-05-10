@@ -15,22 +15,28 @@ echo "目录: ${APP_DIR}"
 echo "端口: ${PORT}"
 echo ""
 
-# 1. 检查 Python3
-if ! command -v python3 &> /dev/null; then
-    echo "[错误] 未找到 python3，请先安装: sudo apt install python3 python3-venv python3-pip"
+# 1. 检查 Python3.9
+PYTHON_BIN="python3.9"
+if ! command -v ${PYTHON_BIN} &> /dev/null; then
+    PYTHON_BIN="python3"
+fi
+if ! command -v ${PYTHON_BIN} &> /dev/null; then
+    echo "[错误] 未找到 python3.9 或 python3，请先安装"
     exit 1
 fi
 
-PYTHON_VERSION=$(python3 --version)
-echo "[✓] ${PYTHON_VERSION}"
+PYTHON_VERSION=$(${PYTHON_BIN} --version)
+echo "[✓] ${PYTHON_VERSION} (${PYTHON_BIN})"
 
 # 2. 创建虚拟环境并安装依赖
 echo ""
 echo "--- 安装 Python 依赖 ---"
-if [ ! -d "${VENV_DIR}" ]; then
-    python3 -m venv "${VENV_DIR}"
-    echo "[✓] 虚拟环境已创建"
+if [ -d "${VENV_DIR}" ]; then
+    rm -rf "${VENV_DIR}"
+    echo "[i] 删除旧虚拟环境"
 fi
+${PYTHON_BIN} -m venv "${VENV_DIR}"
+echo "[✓] 虚拟环境已创建 (${PYTHON_BIN})"
 
 source "${VENV_DIR}/bin/activate"
 pip install --upgrade pip -q
