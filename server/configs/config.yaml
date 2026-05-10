@@ -4,7 +4,20 @@ server:
 vision:
   provider: "yolo"
   endpoint: "http://localhost:5000"
-  # provider: "qwen"
-  # api_key: "sk-c8454d49077c4827a2919b023283d588"
-  # endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-  # model: "qwen3.6-plus-2026-04-02"
+
+mysql:
+  dsn: "root:123456@tcp(localhost:3306)/mtiano?charset=utf8mb4&parseTime=True"
+
+wechat:
+  appid: "wx_xxx"
+  secret: "xxx"
+
+jwt:
+  secret: "mtiano-stock-jwt-secret-change-me"
+  expire_hours: 168
+
+stock:
+  akshare_endpoint: "http://localhost:5001"
+  ai_model: "qwen-plus"
+  ai_api_key: "sk-c8454d49077c4827a2919b023283d588"
+  ai_endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1"
