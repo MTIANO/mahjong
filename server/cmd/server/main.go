@@ -56,7 +56,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(authService)
 	r.POST("/api/v1/auth/login", authHandler.Login)
 
-	stockHandler := handler.NewStockHandler(store, stockDataService)
+	stockHandler := handler.NewStockHandler(store, stockDataService, stockAnalyzer)
 	stockGroup := r.Group("/api/v1/stock")
 	stockGroup.Use(middleware.JWTAuth(authService))
 	{

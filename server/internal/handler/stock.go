@@ -1,19 +1,24 @@
 package handler
 
 import (
+	"context"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mtiano/server/internal/model"
 	"github.com/mtiano/server/internal/service"
 )
 
 type StockHandler struct {
 	store     *service.StockStore
 	stockData *service.StockDataService
+	analyzer  *service.StockAnalyzer
 }
 
-func NewStockHandler(store *service.StockStore, stockData *service.StockDataService) *StockHandler {
-	return &StockHandler{store: store, stockData: stockData}
+func NewStockHandler(store *service.StockStore, stockData *service.StockDataService, analyzer *service.StockAnalyzer) *StockHandler {
+	return &StockHandler{store: store, stockData: stockData, analyzer: analyzer}
 }
 
 func (h *StockHandler) GetRecommendations(c *gin.Context) {
@@ -59,7 +64,32 @@ func (h *StockHandler) AddWatchlist(c *gin.Context) {
 		return
 	}
 
+	go h.analyzeStock(stocks[0])
+
 	c.JSON(http.StatusOK, gin.H{"message": "ok", "stock": stocks[0]})
+}
+
+func (h *StockHandler) analyzeStock(stock service.StockInfo) {
+	result, err := h.analyzer.Analyze(context.Background(), stock)
+	if err != nil {
+		log.Printf("[StockHandler] analyze %s(%s) failed: %v", stock.Name, stock.Code, err)
+		return
+	}
+	rec := &model.StockRecommendation{
+		StockCode:    stock.Code,
+		StockName:    stock.Name,
+		Source:       "watchlist",
+		BuyScore:     result.BuyScore,
+		BuyReason:    result.BuyReason,
+		TailScore:    result.TailScore,
+		TailReason:   result.TailReason,
+		AnalysisDate: time.Now().Format("2006-01-02"),
+	}
+	if err := h.store.UpsertRecommendation(rec); err != nil {
+		log.Printf("[StockHandler] upsert %s failed: %v", stock.Code, err)
+		return
+	}
+	log.Printf("[StockHandler] analyzed %s(%s): buy=%d tail=%d", stock.Name, stock.Code, result.BuyScore, result.TailScore)
 }
 
 func (h *StockHandler) RemoveWatchlist(c *gin.Context) {
