@@ -5,7 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/mtiano/server/internal/config"
+	stockcron "github.com/mtiano/server/internal/cron"
+	"github.com/mtiano/server/internal/db"
 	"github.com/mtiano/server/internal/handler"
+	"github.com/mtiano/server/internal/middleware"
 	"github.com/mtiano/server/internal/service"
 )
 
@@ -25,6 +28,21 @@ func main() {
 		vision = service.NewStubVisionService()
 	}
 
+	mysqlDB, err := db.InitMySQL(cfg.MySQL.DSN)
+	if err != nil {
+		log.Fatalf("failed to init mysql: %v", err)
+	}
+	defer mysqlDB.Close()
+
+	store := service.NewStockStore(mysqlDB)
+	authService := service.NewAuthService(cfg.WeChat.AppID, cfg.WeChat.Secret, cfg.JWT.Secret, cfg.JWT.ExpireHours, store)
+	stockDataService := service.NewStockDataService(cfg.Stock.AKShareEndpoint)
+	stockAnalyzer := service.NewStockAnalyzer(cfg.Stock.AIAPIKey, cfg.Stock.AIEndpoint, cfg.Stock.AIModel)
+
+	cronJob := stockcron.NewStockCron(store, stockDataService, stockAnalyzer)
+	cronJob.Start()
+	defer cronJob.Stop()
+
 	r := gin.Default()
 
 	r.GET("/api/v1/health", func(c *gin.Context) {
@@ -34,6 +52,19 @@ func main() {
 	recognizeHandler := handler.NewRecognizeHandler(vision)
 	r.POST("/api/v1/recognize", recognizeHandler.Handle)
 	r.POST("/api/v1/calculate", handler.HandleCalculate)
+
+	authHandler := handler.NewAuthHandler(authService)
+	r.POST("/api/v1/auth/login", authHandler.Login)
+
+	stockHandler := handler.NewStockHandler(store, stockDataService)
+	stockGroup := r.Group("/api/v1/stock")
+	stockGroup.Use(middleware.JWTAuth(authService))
+	{
+		stockGroup.GET("/recommendations", stockHandler.GetRecommendations)
+		stockGroup.GET("/watchlist", stockHandler.GetWatchlist)
+		stockGroup.POST("/watchlist", stockHandler.AddWatchlist)
+		stockGroup.DELETE("/watchlist/:code", stockHandler.RemoveWatchlist)
+	}
 
 	if err := r.Run(cfg.Server.Port); err != nil {
 		log.Fatalf("failed to start server: %v", err)
