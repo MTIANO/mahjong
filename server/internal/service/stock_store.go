@@ -105,7 +105,7 @@ func (s *StockStore) UpsertRecommendation(rec *model.StockRecommendation) error 
 func (s *StockStore) GetTodayRecommendations(source string) ([]model.StockRecommendation, error) {
 	today := time.Now().Format("2006-01-02")
 	query := "SELECT id, stock_code, stock_name, source, buy_score, buy_reason, tail_score, tail_reason, analysis_date, created_at, updated_at FROM stock_recommendations WHERE analysis_date = ?"
-	args := []interface{}{today}
+	args := []any{today}
 
 	if source != "" {
 		query += " AND source = ?"

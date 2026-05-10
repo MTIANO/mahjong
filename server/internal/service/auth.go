@@ -84,7 +84,7 @@ func (s *AuthService) GenerateToken(userID int64) (string, error) {
 }
 
 func (s *AuthService) ParseToken(tokenStr string) (int64, error) {
-	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
