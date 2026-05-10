@@ -57,11 +57,16 @@ Page({
     }).then(res => {
       if (res.statusCode === 200) {
         this.minuteData = res.data
-        if (this.data.chartType === 'minute') {
-          this.drawChart()
-        }
       }
-    }).catch(err => console.error('load minute:', err))
+      if (this.data.chartType === 'minute') {
+        this.drawChart()
+      }
+    }).catch(err => {
+      console.error('load minute:', err)
+      if (this.data.chartType === 'minute') {
+        this.setData({ chartLoading: false })
+      }
+    })
   },
 
   loadDailyKline() {
@@ -71,11 +76,16 @@ Page({
     }).then(res => {
       if (res.statusCode === 200 && res.data.klines) {
         this.dailyData = res.data.klines
-        if (this.data.chartType === 'daily') {
-          this.drawChart()
-        }
       }
-    }).catch(err => console.error('load daily:', err))
+      if (this.data.chartType === 'daily') {
+        this.drawChart()
+      }
+    }).catch(err => {
+      console.error('load daily:', err)
+      if (this.data.chartType === 'daily') {
+        this.setData({ chartLoading: false })
+      }
+    })
   },
 
   switchChart(e) {
@@ -119,7 +129,10 @@ Page({
   },
 
   renderChart() {
-    if (!this.ctx) return
+    if (!this.ctx) {
+      this.setData({ chartLoading: false })
+      return
+    }
     this.setData({ chartLoading: true })
     const ctx = this.ctx
     const w = this.canvasWidth

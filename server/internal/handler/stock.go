@@ -98,6 +98,7 @@ func (h *StockHandler) GetQuote(c *gin.Context) {
 	code := c.Param("code")
 	quote, err := h.stockData.GetStockQuote(code)
 	if err != nil {
+		log.Printf("[StockHandler] GetQuote %s: %v", code, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get quote"})
 		return
 	}
@@ -114,6 +115,7 @@ func (h *StockHandler) GetDailyKline(c *gin.Context) {
 	}
 	klines, err := h.stockData.GetDailyKline(code, count)
 	if err != nil {
+		log.Printf("[StockHandler] GetDailyKline %s: %v", code, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get daily kline"})
 		return
 	}
@@ -124,6 +126,7 @@ func (h *StockHandler) GetMinuteKline(c *gin.Context) {
 	code := c.Param("code")
 	data, err := h.stockData.GetMinuteKline(code)
 	if err != nil {
+		log.Printf("[StockHandler] GetMinuteKline %s: %v", code, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get minute kline"})
 		return
 	}
