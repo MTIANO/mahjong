@@ -20,9 +20,6 @@ Page({
   onLoad(options) {
     this.stockCode = options.code || ''
     this.stockName = options.name || ''
-    if (this.stockName) {
-      wx.setNavigationBarTitle({ title: this.stockName })
-    }
     this.dpr = wx.getWindowInfo().pixelRatio
     this.loadData()
   },
@@ -40,6 +37,9 @@ Page({
     }).then(res => {
       if (res.statusCode === 200 && res.data.quote) {
         const q = res.data.quote
+        if (q.name) {
+          wx.setNavigationBarTitle({ title: q.name })
+        }
         this.setData({
           quote: q,
           volumeText: this.formatVolume(q.volume),
