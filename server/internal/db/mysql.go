@@ -60,5 +60,13 @@ func createTables(db *sql.DB) error {
 			return fmt.Errorf("exec %q: %w", stmt[:40], err)
 		}
 	}
+
+	migrations := []string{
+		"ALTER TABLE stock_recommendations ADD COLUMN key_signals VARCHAR(100) DEFAULT '' AFTER tail_reason",
+	}
+	for _, m := range migrations {
+		db.Exec(m)
+	}
+
 	return nil
 }

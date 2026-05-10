@@ -17,6 +17,7 @@ type AnalysisResult struct {
 	BuyReason  string `json:"buy_reason"`
 	TailScore  int    `json:"tail_score"`
 	TailReason string `json:"tail_reason"`
+	KeySignals string `json:"key_signals"`
 }
 
 type StockAnalyzer struct {
@@ -29,25 +30,48 @@ func NewStockAnalyzer(apiKey, endpoint, model string) *StockAnalyzer {
 	return &StockAnalyzer{apiKey: apiKey, endpoint: endpoint, model: model}
 }
 
+const systemPrompt = `你是一位经验丰富的A股短线交易分析师，擅长从量价关系、资金流向和技术形态中发现短线机会。你的分析风格偏积极但理性——你的目标是帮助交易者发现尽可能多的有价值的交易机会，而不是过度保守导致错失良机。
+
+评分标准：
+- 8-10分：强烈推荐，多个积极信号共振（放量突破、资金流入、热门题材等）
+- 6-7分：值得关注，有明确的交易逻辑支撑
+- 4-5分：中性，没有明显的买入或卖出信号
+- 1-3分：建议回避，存在明显的风险信号
+
+你倾向于给出较高分数的情况：
+- 换手率适中（3%-8%），说明交易活跃但不过热
+- 涨跌幅在合理范围内（-3%到+5%），尚有上涨空间
+- 市盈率合理或处于行业低估区间
+- 成交量相比平时放大，资金关注度提升
+
+你倾向于给出较低分数的情况：
+- 换手率过高（>15%）或过低（<0.5%）
+- 已大幅拉升（涨幅>7%），追高风险大
+- 跌幅过大（<-5%），可能处于下跌趋势
+- 市盈率为负或极高（>200），基本面存疑`
+
 func buildAnalysisPrompt(stock StockInfo) string {
-	return fmt.Sprintf(`你是一位专业的A股分析师。请根据以下股票实时数据，分析该股票的短线交易价值，给出今日购买和今日尾盘购买的推荐度及理由。
+	return fmt.Sprintf(`请分析以下A股的短线交易价值：
 
-股票数据：
-- 代码: %s
-- 名称: %s
-- 当前价: %.2f
-- 涨跌幅: %.2f%%
-- 成交量: %d
-- 换手率: %.2f%%
-- 市盈率: %.2f
-- 总市值: %.2f亿
+【实时数据】
+代码: %s | 名称: %s
+当前价: %.2f | 涨跌幅: %.2f%%
+成交量: %d手 | 换手率: %.2f%%
+市盈率: %.2f | 总市值: %.2f亿
 
-请返回严格的 JSON 格式（不要包含任何其他文字）：
+【分析要求】
+1. 结合量价关系判断资金动向
+2. 分析当前涨跌幅位置的追涨/抄底价值
+3. 评估换手率是否暗示异动
+4. 综合给出今日即时买入和尾盘买入的推荐度
+
+请返回严格的 JSON（不要包含其他文字）：
 {
-  "buy_score": <1-10的整数，10为最推荐>,
-  "buy_reason": "<50字以内的今日购买理由>",
-  "tail_score": <1-10的整数，10为最推荐>,
-  "tail_reason": "<50字以内的尾盘购买理由>"
+  "buy_score": <1-10整数>,
+  "buy_reason": "<40字以内的即时买入理由>",
+  "tail_score": <1-10整数>,
+  "tail_reason": "<40字以内的尾盘买入理由>",
+  "key_signals": "<30字以内的关键技术信号，如：放量上攻、缩量回调等>"
 }`, stock.Code, stock.Name, stock.Price, stock.ChangePct, stock.Volume, stock.TurnoverRate, stock.PERatio, stock.MarketCap)
 }
 
@@ -78,6 +102,7 @@ func (a *StockAnalyzer) Analyze(ctx context.Context, stock StockInfo) (*Analysis
 	reqBody := chatRequest{
 		Model: a.model,
 		Messages: []chatMessage{
+			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: prompt},
 		},
 	}

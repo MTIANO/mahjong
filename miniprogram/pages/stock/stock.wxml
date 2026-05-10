@@ -19,7 +19,7 @@
   </view>
 
   <view wx:else class="stock-list">
-    <view class="stock-card" wx:for="{{recommendations}}" wx:key="id">
+    <view class="stock-card" wx:for="{{recommendations}}" wx:key="id" bindtap="goDetail" data-code="{{item.stock_code}}" data-name="{{item.stock_name}}">
       <view class="stock-header">
         <text class="stock-code">{{item.stock_code}}</text>
         <text class="stock-name">{{item.stock_name}}</text>

@@ -1,0 +1,149 @@
+.container {
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+/* 行情头部 */
+.quote-header {
+  background: #1a1a2e;
+  padding: 24rpx 32rpx 32rpx;
+}
+
+.quote-top {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.stock-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-right: 16rpx;
+}
+
+.stock-code {
+  font-size: 24rpx;
+  color: rgba(255,255,255,0.6);
+}
+
+.quote-main {
+  display: flex;
+  align-items: flex-end;
+  gap: 24rpx;
+}
+
+.price {
+  font-size: 56rpx;
+  font-weight: bold;
+}
+
+.change-info {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 6rpx;
+}
+
+.change, .change-pct {
+  font-size: 26rpx;
+  font-weight: 500;
+}
+
+.red { color: #ff4d4f; }
+.green { color: #52c41a; }
+
+/* 图表 Tab */
+.chart-tabs {
+  display: flex;
+  background: #fff;
+  border-bottom: 1rpx solid #eee;
+}
+
+.chart-tab {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  font-size: 28rpx;
+  color: #666;
+  position: relative;
+}
+
+.chart-tab.active {
+  color: #1a1a2e;
+  font-weight: bold;
+}
+
+.chart-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48rpx;
+  height: 4rpx;
+  background: #1a1a2e;
+  border-radius: 2rpx;
+}
+
+/* 图表区域 */
+.chart-wrapper {
+  background: #fff;
+  position: relative;
+  height: 500rpx;
+}
+
+.stock-chart {
+  width: 100%;
+  height: 500rpx;
+}
+
+.chart-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.8);
+  color: #999;
+  font-size: 28rpx;
+}
+
+/* 行情参数网格 */
+.params-grid {
+  background: #fff;
+  margin-top: 16rpx;
+  padding: 8rpx 0;
+}
+
+.param-row {
+  display: flex;
+  padding: 16rpx 32rpx;
+}
+
+.param-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.param-label {
+  font-size: 22rpx;
+  color: #999;
+  margin-bottom: 6rpx;
+}
+
+.param-value {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.loading-page {
+  text-align: center;
+  padding: 200rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}

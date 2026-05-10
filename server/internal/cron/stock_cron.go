@@ -96,6 +96,7 @@ func (sc *StockCron) analyzeAndStore(stocks []service.StockInfo, source string) 
 			BuyReason:    result.BuyReason,
 			TailScore:    result.TailScore,
 			TailReason:   result.TailReason,
+			KeySignals:   result.KeySignals,
 			AnalysisDate: today,
 		}
 

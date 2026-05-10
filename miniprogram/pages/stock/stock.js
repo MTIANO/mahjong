@@ -72,6 +72,13 @@ Page({
     this.setData({ inputCode: e.detail.value.trim() })
   },
 
+  goDetail(e) {
+    const { code, name } = e.currentTarget.dataset
+    wx.navigateTo({
+      url: '/pages/stock-detail/stock-detail?code=' + code + '&name=' + encodeURIComponent(name)
+    })
+  },
+
   addWatchlist() {
     const code = this.data.inputCode
     if (!code) return

@@ -1,0 +1,94 @@
+<view class="container">
+  <!-- 顶部行情区 -->
+  <view class="quote-header" wx:if="{{quote}}">
+    <view class="quote-top">
+      <text class="stock-name">{{quote.name}}</text>
+      <text class="stock-code">{{quote.code}}</text>
+    </view>
+    <view class="quote-main">
+      <text class="price {{quote.change >= 0 ? 'red' : 'green'}}">{{quote.price}}</text>
+      <view class="change-info">
+        <text class="change {{quote.change >= 0 ? 'red' : 'green'}}">{{quote.change >= 0 ? '+' : ''}}{{quote.change}}</text>
+        <text class="change-pct {{quote.change_pct >= 0 ? 'red' : 'green'}}">{{quote.change_pct >= 0 ? '+' : ''}}{{quote.change_pct}}%</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 图表切换 Tab -->
+  <view class="chart-tabs">
+    <view class="chart-tab {{chartType === 'minute' ? 'active' : ''}}" bindtap="switchChart" data-type="minute">分时</view>
+    <view class="chart-tab {{chartType === 'daily' ? 'active' : ''}}" bindtap="switchChart" data-type="daily">日K</view>
+  </view>
+
+  <!-- Canvas 图表区 -->
+  <view class="chart-wrapper">
+    <canvas type="2d" id="stockChart" class="stock-chart" bindtouchstart="onChartTouch" bindtouchmove="onChartTouch" bindtouchend="onChartTouchEnd"></canvas>
+    <view wx:if="{{chartLoading}}" class="chart-loading">
+      <text>加载中...</text>
+    </view>
+  </view>
+
+  <!-- 行情参数网格 -->
+  <view class="params-grid" wx:if="{{quote}}">
+    <view class="param-row">
+      <view class="param-item">
+        <text class="param-label">开盘</text>
+        <text class="param-value {{quote.open >= quote.prev_close ? 'red' : 'green'}}">{{quote.open}}</text>
+      </view>
+      <view class="param-item">
+        <text class="param-label">最高</text>
+        <text class="param-value {{quote.high >= quote.prev_close ? 'red' : 'green'}}">{{quote.high}}</text>
+      </view>
+      <view class="param-item">
+        <text class="param-label">量比</text>
+        <text class="param-value">{{quote.volume_ratio || '--'}}</text>
+      </view>
+    </view>
+    <view class="param-row">
+      <view class="param-item">
+        <text class="param-label">昨收</text>
+        <text class="param-value">{{quote.prev_close}}</text>
+      </view>
+      <view class="param-item">
+        <text class="param-label">最低</text>
+        <text class="param-value {{quote.low >= quote.prev_close ? 'red' : 'green'}}">{{quote.low}}</text>
+      </view>
+      <view class="param-item">
+        <text class="param-label">换手率</text>
+        <text class="param-value">{{quote.turnover_rate}}%</text>
+      </view>
+    </view>
+    <view class="param-row">
+      <view class="param-item">
+        <text class="param-label">成交量</text>
+        <text class="param-value">{{volumeText}}</text>
+      </view>
+      <view class="param-item">
+        <text class="param-label">成交额</text>
+        <text class="param-value">{{amountText}}</text>
+      </view>
+      <view class="param-item">
+        <text class="param-label">振幅</text>
+        <text class="param-value">{{quote.amplitude}}%</text>
+      </view>
+    </view>
+    <view class="param-row">
+      <view class="param-item">
+        <text class="param-label">市盈率</text>
+        <text class="param-value">{{quote.pe_ratio || '--'}}</text>
+      </view>
+      <view class="param-item">
+        <text class="param-label">市净率</text>
+        <text class="param-value">{{quote.pb_ratio || '--'}}</text>
+      </view>
+      <view class="param-item">
+        <text class="param-label">总市值</text>
+        <text class="param-value">{{marketCapText}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{!quote && !chartLoading}}" class="loading-page">
+    <text>加载中...</text>
+  </view>
+</view>

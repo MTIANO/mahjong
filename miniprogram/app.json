@@ -5,7 +5,8 @@
     "pages/score/score",
     "pages/camera/camera",
     "pages/manual/manual",
-    "pages/stock/stock"
+    "pages/stock/stock",
+    "pages/stock-detail/stock-detail"
   ],
   "window": {
     "navigationBarBackgroundColor": "#1a1a2e",

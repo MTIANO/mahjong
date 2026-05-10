@@ -64,6 +64,9 @@ func main() {
 		stockGroup.GET("/watchlist", stockHandler.GetWatchlist)
 		stockGroup.POST("/watchlist", stockHandler.AddWatchlist)
 		stockGroup.DELETE("/watchlist/:code", stockHandler.RemoveWatchlist)
+		stockGroup.GET("/quote/:code", stockHandler.GetQuote)
+		stockGroup.GET("/kline/daily/:code", stockHandler.GetDailyKline)
+		stockGroup.GET("/kline/minute/:code", stockHandler.GetMinuteKline)
 	}
 
 	if err := r.Run(cfg.Server.Port); err != nil {

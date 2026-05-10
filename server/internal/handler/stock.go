@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -83,6 +84,7 @@ func (h *StockHandler) analyzeStock(stock service.StockInfo) {
 		BuyReason:    result.BuyReason,
 		TailScore:    result.TailScore,
 		TailReason:   result.TailReason,
+		KeySignals:   result.KeySignals,
 		AnalysisDate: time.Now().Format("2006-01-02"),
 	}
 	if err := h.store.UpsertRecommendation(rec); err != nil {
@@ -90,6 +92,42 @@ func (h *StockHandler) analyzeStock(stock service.StockInfo) {
 		return
 	}
 	log.Printf("[StockHandler] analyzed %s(%s): buy=%d tail=%d", stock.Name, stock.Code, result.BuyScore, result.TailScore)
+}
+
+func (h *StockHandler) GetQuote(c *gin.Context) {
+	code := c.Param("code")
+	quote, err := h.stockData.GetStockQuote(code)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get quote"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"quote": quote})
+}
+
+func (h *StockHandler) GetDailyKline(c *gin.Context) {
+	code := c.Param("code")
+	count := 60
+	if q := c.Query("count"); q != "" {
+		if n, err := strconv.Atoi(q); err == nil && n > 0 {
+			count = n
+		}
+	}
+	klines, err := h.stockData.GetDailyKline(code, count)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get daily kline"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"klines": klines})
+}
+
+func (h *StockHandler) GetMinuteKline(c *gin.Context) {
+	code := c.Param("code")
+	data, err := h.stockData.GetMinuteKline(code)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get minute kline"})
+		return
+	}
+	c.JSON(http.StatusOK, data)
 }
 
 func (h *StockHandler) RemoveWatchlist(c *gin.Context) {
