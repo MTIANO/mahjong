@@ -4,7 +4,8 @@
     "pages/yaku/yaku",
     "pages/score/score",
     "pages/camera/camera",
-    "pages/manual/manual"
+    "pages/manual/manual",
+    "pages/stock/stock"
   ],
   "window": {
     "navigationBarBackgroundColor": "#1a1a2e",
@@ -33,8 +34,8 @@
         "text": "识别"
       },
       {
-        "pagePath": "pages/manual/manual",
-        "text": "算番"
+        "pagePath": "pages/stock/stock",
+        "text": "股票"
       }
     ]
   },

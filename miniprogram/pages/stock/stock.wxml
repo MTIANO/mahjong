@@ -1,0 +1,55 @@
+<view class="container">
+  <view class="header">
+    <text class="title">股票推荐</text>
+    <text class="date">{{today}}</text>
+  </view>
+
+  <view class="tabs">
+    <view class="tab {{activeTab === '' ? 'active' : ''}}" bindtap="switchTab" data-tab="">全部</view>
+    <view class="tab {{activeTab === 'watchlist' ? 'active' : ''}}" bindtap="switchTab" data-tab="watchlist">自选</view>
+    <view class="tab {{activeTab === 'hot' ? 'active' : ''}}" bindtap="switchTab" data-tab="hot">热门</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:elif="{{recommendations.length === 0}}" class="empty">
+    <text>暂无推荐数据</text>
+  </view>
+
+  <view wx:else class="stock-list">
+    <view class="stock-card" wx:for="{{recommendations}}" wx:key="id">
+      <view class="stock-header">
+        <text class="stock-code">{{item.stock_code}}</text>
+        <text class="stock-name">{{item.stock_name}}</text>
+        <text class="source-tag {{item.source}}">{{item.source === 'watchlist' ? '自选' : '热门'}}</text>
+      </view>
+
+      <view class="score-row">
+        <text class="score-label">今日购买</text>
+        <view class="progress-bar">
+          <view class="progress-fill" style="width: {{item.buy_score * 10}}%"></view>
+        </view>
+        <text class="score-value">{{item.buy_score}}分</text>
+      </view>
+      <text class="reason">{{item.buy_reason}}</text>
+
+      <view class="score-row">
+        <text class="score-label">尾盘购买</text>
+        <view class="progress-bar">
+          <view class="progress-fill tail" style="width: {{item.tail_score * 10}}%"></view>
+        </view>
+        <text class="score-value">{{item.tail_score}}分</text>
+      </view>
+      <text class="reason">{{item.tail_reason}}</text>
+    </view>
+  </view>
+
+  <view class="add-section">
+    <view class="add-row">
+      <input class="add-input" placeholder="输入股票代码" value="{{inputCode}}" bindinput="onInputCode" />
+      <button class="add-btn" bindtap="addWatchlist" disabled="{{!inputCode}}">添加自选</button>
+    </view>
+  </view>
+</view>
