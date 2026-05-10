@@ -1,76 +1,119 @@
-import akshare as ak
+import re
+import requests
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Referer": "https://finance.sina.com.cn",
+}
 
-@app.route('/api/stock/hot', methods=['GET'])
+
+def stock_symbol_qq(code):
+    code = code.strip().zfill(6)
+    if code.startswith(("6", "9")):
+        return "sh" + code
+    return "sz" + code
+
+
+def fetch_stocks_qq(codes):
+    """腾讯财经实时行情 API，云服务器可用"""
+    symbols = ",".join(stock_symbol_qq(c) for c in codes)
+    url = f"http://qt.gtimg.cn/q={symbols}"
+    resp = requests.get(url, headers=HEADERS, timeout=10)
+    resp.encoding = "gbk"
+
+    stocks = []
+    for line in resp.text.strip().split("\n"):
+        line = line.strip()
+        if not line or '="' not in line:
+            continue
+        match = re.search(r'"(.+)"', line)
+        if not match:
+            continue
+        fields = match.group(1).split("~")
+        if len(fields) < 46 or not fields[3]:
+            continue
+        price = float(fields[3])
+        if price == 0:
+            continue
+        stocks.append({
+            "code": fields[2],
+            "name": fields[1],
+            "price": price,
+            "change_pct": float(fields[32]) if fields[32] else 0,
+            "volume": int(float(fields[6]) * 100) if fields[6] else 0,
+            "turnover_rate": float(fields[38]) if fields[38] else 0,
+            "pe_ratio": float(fields[39]) if fields[39] else 0,
+            "market_cap": float(fields[45]) if fields[45] else 0,
+        })
+    return stocks
+
+
+def fetch_hot_sina(count=10):
+    """新浪财经成交额排行，云服务器可用"""
+    url = (
+        "https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/"
+        "Market_Center.getHQNodeData"
+    )
+    params = {
+        "page": 1,
+        "num": count,
+        "sort": "amount",
+        "asc": 0,
+        "node": "hs_a",
+        "_s_r_a": "init",
+    }
+    resp = requests.get(url, headers=HEADERS, params=params, timeout=10)
+    data = resp.json()
+
+    stocks = []
+    for item in data:
+        price = float(item.get("trade", 0) or 0)
+        if price == 0:
+            continue
+        stocks.append({
+            "code": item["code"],
+            "name": item["name"],
+            "price": price,
+            "change_pct": float(item.get("changepercent", 0) or 0),
+            "volume": int(float(item.get("volume", 0) or 0)),
+            "turnover_rate": float(item.get("turnoverratio", 0) or 0),
+            "pe_ratio": float(item.get("per", 0) or 0),
+            "market_cap": float(item.get("mktcap", 0) or 0) / 10000,
+        })
+    return stocks
+
+
+@app.route("/api/stock/hot", methods=["GET"])
 def get_hot_stocks():
-    count = request.args.get('count', 10, type=int)
+    count = request.args.get("count", 10, type=int)
     try:
-        df = ak.stock_hot_rank_em()
-        df = df.head(count)
-        spot = ak.stock_zh_a_spot_em()
-        spot = spot.set_index('代码')
-
-        stocks = []
-        for _, row in df.iterrows():
-            code = str(row['股票代码']).zfill(6)
-            name = row['股票简称']
-            info = {'code': code, 'name': name, 'price': 0, 'change_pct': 0,
-                    'volume': 0, 'turnover_rate': 0, 'pe_ratio': 0, 'market_cap': 0}
-            if code in spot.index:
-                s = spot.loc[code]
-                info['price'] = float(s.get('最新价', 0) or 0)
-                info['change_pct'] = float(s.get('涨跌幅', 0) or 0)
-                info['volume'] = int(s.get('成交量', 0) or 0)
-                info['turnover_rate'] = float(s.get('换手率', 0) or 0)
-                info['pe_ratio'] = float(s.get('市盈率-动态', 0) or 0)
-                info['market_cap'] = float(s.get('总市值', 0) or 0) / 1e8
-            stocks.append(info)
-
-        return jsonify({'stocks': stocks})
+        stocks = fetch_hot_sina(count)
+        return jsonify({"stocks": stocks})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/stock/detail', methods=['GET'])
+@app.route("/api/stock/detail", methods=["GET"])
 def get_stock_detail():
-    codes_param = request.args.get('codes', '')
+    codes_param = request.args.get("codes", "")
     if not codes_param:
-        return jsonify({'error': 'codes parameter required'}), 400
+        return jsonify({"error": "codes parameter required"}), 400
 
-    codes = [c.strip() for c in codes_param.split(',') if c.strip()]
+    codes = [c.strip() for c in codes_param.split(",") if c.strip()]
     try:
-        spot = ak.stock_zh_a_spot_em()
-        spot['代码'] = spot['代码'].astype(str).str.zfill(6)
-        spot = spot.set_index('代码')
-
-        stocks = []
-        for code in codes:
-            if code not in spot.index:
-                continue
-            s = spot.loc[code]
-            stocks.append({
-                'code': code,
-                'name': str(s.get('名称', '')),
-                'price': float(s.get('最新价', 0) or 0),
-                'change_pct': float(s.get('涨跌幅', 0) or 0),
-                'volume': int(s.get('成交量', 0) or 0),
-                'turnover_rate': float(s.get('换手率', 0) or 0),
-                'pe_ratio': float(s.get('市盈率-动态', 0) or 0),
-                'market_cap': float(s.get('总市值', 0) or 0) / 1e8,
-            })
-
-        return jsonify({'stocks': stocks})
+        stocks = fetch_stocks_qq(codes)
+        return jsonify({"stocks": stocks})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/health', methods=['GET'])
+@app.route("/health", methods=["GET"])
 def health():
-    return jsonify({'status': 'ok'})
+    return jsonify({"status": "ok"})
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5001)
