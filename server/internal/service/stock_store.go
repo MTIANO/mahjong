@@ -114,8 +114,8 @@ func (s *StockStore) GetTodayRecommendations(source string, userID int64) ([]mod
 		query += " AND source = ?"
 		args = append(args, source)
 	}
-	if source == "watchlist" && userID > 0 {
-		query += " AND stock_code IN (SELECT stock_code FROM watchlist WHERE user_id = ?)"
+	if userID > 0 {
+		query += " AND (source != 'watchlist' OR stock_code IN (SELECT stock_code FROM watchlist WHERE user_id = ?))"
 		args = append(args, userID)
 	}
 	query += " ORDER BY buy_score DESC"
