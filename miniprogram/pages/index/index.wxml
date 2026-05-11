@@ -28,7 +28,7 @@
       </view>
     </navigator>
 
-    <navigator url="/pages/manual/manual" open-type="switchTab" class="menu-item">
+    <navigator url="/pages/manual/manual" class="menu-item">
       <text class="menu-icon">🀄</text>
       <view class="menu-text">
         <text class="menu-title">手动算番</text>
