@@ -24,9 +24,11 @@ func NewStockHandler(store *service.StockStore, stockData *service.StockDataServ
 
 func (h *StockHandler) GetRecommendations(c *gin.Context) {
 	source := c.Query("source")
-	userID := c.GetInt64("user_id")
-	recs, err := h.store.GetTodayRecommendations(source, userID)
+	userID, _ := c.Get("user_id")
+	uid, _ := userID.(int64)
+	recs, err := h.store.GetTodayRecommendations(source, uid)
 	if err != nil {
+		log.Printf("[StockHandler] GetRecommendations: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get recommendations"})
 		return
 	}
