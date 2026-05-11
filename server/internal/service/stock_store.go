@@ -105,7 +105,7 @@ func (s *StockStore) UpsertRecommendation(rec *model.StockRecommendation) error 
 	return err
 }
 
-func (s *StockStore) GetTodayRecommendations(source string) ([]model.StockRecommendation, error) {
+func (s *StockStore) GetTodayRecommendations(source string, userID int64) ([]model.StockRecommendation, error) {
 	today := time.Now().Format("2006-01-02")
 	query := "SELECT id, stock_code, stock_name, source, buy_score, buy_reason, tail_score, tail_reason, COALESCE(key_signals, '') as key_signals, COALESCE(risk_level, 0) as risk_level, COALESCE(trap_warning, '') as trap_warning, analysis_date, created_at, updated_at FROM stock_recommendations WHERE analysis_date = ?"
 	args := []any{today}
@@ -113,6 +113,10 @@ func (s *StockStore) GetTodayRecommendations(source string) ([]model.StockRecomm
 	if source != "" {
 		query += " AND source = ?"
 		args = append(args, source)
+	}
+	if source == "watchlist" && userID > 0 {
+		query += " AND stock_code IN (SELECT stock_code FROM watchlist WHERE user_id = ?)"
+		args = append(args, userID)
 	}
 	query += " ORDER BY buy_score DESC"
 

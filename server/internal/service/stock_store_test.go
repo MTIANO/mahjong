@@ -105,7 +105,7 @@ func TestStockStore_Recommendations(t *testing.T) {
 		t.Fatalf("UpsertRecommendation: %v", err)
 	}
 
-	recs, err := store.GetTodayRecommendations("")
+	recs, err := store.GetTodayRecommendations("", 0)
 	if err != nil {
 		t.Fatalf("GetTodayRecommendations: %v", err)
 	}
