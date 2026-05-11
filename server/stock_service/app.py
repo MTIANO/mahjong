@@ -48,6 +48,13 @@ def fetch_stocks_qq(codes):
             "turnover_rate": float(fields[38]) if fields[38] else 0,
             "pe_ratio": float(fields[39]) if fields[39] else 0,
             "market_cap": float(fields[45]) if fields[45] else 0,
+            "float_market_cap": float(fields[44]) if fields[44] else 0,
+            "volume_ratio": float(fields[49]) if len(fields) > 49 and fields[49] else 0,
+            "amplitude": float(fields[43]) if fields[43] else 0,
+            "high": float(fields[33]) if fields[33] else 0,
+            "low": float(fields[34]) if fields[34] else 0,
+            "open": float(fields[5]) if fields[5] else 0,
+            "prev_close": float(fields[4]) if fields[4] else 0,
         })
     return stocks
 

@@ -12,6 +12,8 @@ type StockRecommendation struct {
 	TailScore    int       `json:"tail_score"`
 	TailReason   string    `json:"tail_reason"`
 	KeySignals   string    `json:"key_signals"`
+	RiskLevel    int       `json:"risk_level"`
+	TrapWarning  string    `json:"trap_warning"`
 	AnalysisDate string    `json:"analysis_date"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`

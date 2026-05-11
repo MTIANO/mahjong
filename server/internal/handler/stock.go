@@ -85,6 +85,8 @@ func (h *StockHandler) analyzeStock(stock service.StockInfo) {
 		TailScore:    result.TailScore,
 		TailReason:   result.TailReason,
 		KeySignals:   result.KeySignals,
+		RiskLevel:    result.RiskLevel,
+		TrapWarning:  result.TrapWarning,
 		AnalysisDate: time.Now().Format("2006-01-02"),
 	}
 	if err := h.store.UpsertRecommendation(rec); err != nil {

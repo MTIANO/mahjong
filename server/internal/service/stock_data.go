@@ -9,14 +9,21 @@ import (
 )
 
 type StockInfo struct {
-	Code         string  `json:"code"`
-	Name         string  `json:"name"`
-	Price        float64 `json:"price"`
-	ChangePct    float64 `json:"change_pct"`
-	Volume       int64   `json:"volume"`
-	TurnoverRate float64 `json:"turnover_rate"`
-	PERatio      float64 `json:"pe_ratio"`
-	MarketCap    float64 `json:"market_cap"`
+	Code           string  `json:"code"`
+	Name           string  `json:"name"`
+	Price          float64 `json:"price"`
+	ChangePct      float64 `json:"change_pct"`
+	Volume         int64   `json:"volume"`
+	TurnoverRate   float64 `json:"turnover_rate"`
+	PERatio        float64 `json:"pe_ratio"`
+	MarketCap      float64 `json:"market_cap"`
+	FloatMarketCap float64 `json:"float_market_cap"`
+	VolumeRatio    float64 `json:"volume_ratio"`
+	Amplitude      float64 `json:"amplitude"`
+	High           float64 `json:"high"`
+	Low            float64 `json:"low"`
+	Open           float64 `json:"open"`
+	PrevClose      float64 `json:"prev_close"`
 }
 
 type StockDataService struct {
