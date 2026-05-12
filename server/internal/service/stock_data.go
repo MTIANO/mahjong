@@ -43,6 +43,16 @@ func (s *StockDataService) GetHotStocks(count int) ([]StockInfo, error) {
 	return s.fetchStocks(url)
 }
 
+func (s *StockDataService) GetGainers(count int) ([]StockInfo, error) {
+	url := fmt.Sprintf("%s/api/stock/gainers?count=%d", s.endpoint, count)
+	return s.fetchStocks(url)
+}
+
+func (s *StockDataService) GetActive(count int) ([]StockInfo, error) {
+	url := fmt.Sprintf("%s/api/stock/active?count=%d", s.endpoint, count)
+	return s.fetchStocks(url)
+}
+
 func (s *StockDataService) GetStockDetails(codes []string) ([]StockInfo, error) {
 	if len(codes) == 0 {
 		return nil, nil
