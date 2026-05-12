@@ -150,3 +150,19 @@ func (sc *StockCron) analyzeAndStore(stocks []service.StockInfo, source string) 
 		log.Printf("[Cron] analyzed %s(%s): buy=%d tail=%d risk=%d", stock.Name, stock.Code, result.BuyScore, result.TailScore, result.RiskLevel)
 	}
 }
+
+// dedupByCode 按参数顺序合并多个榜单,按 code 去重,保留首次出现项(靠前榜单优先)。
+func dedupByCode(lists ...[]service.StockInfo) []service.StockInfo {
+	seen := map[string]struct{}{}
+	var merged []service.StockInfo
+	for _, list := range lists {
+		for _, s := range list {
+			if _, ok := seen[s.Code]; ok {
+				continue
+			}
+			seen[s.Code] = struct{}{}
+			merged = append(merged, s)
+		}
+	}
+	return merged
+}
