@@ -59,8 +59,8 @@ def fetch_stocks_qq(codes):
     return stocks
 
 
-def fetch_hot_sina(count=10):
-    """新浪财经成交额排行，云服务器可用"""
+def fetch_sina(count=10, sort="amount", min_change_pct=None):
+    """新浪 Market_Center 通用查询"""
     url = (
         "https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/"
         "Market_Center.getHQNodeData"
@@ -68,7 +68,7 @@ def fetch_hot_sina(count=10):
     params = {
         "page": 1,
         "num": count,
-        "sort": "amount",
+        "sort": sort,
         "asc": 0,
         "node": "hs_a",
         "_s_r_a": "init",
@@ -81,11 +81,14 @@ def fetch_hot_sina(count=10):
         price = float(item.get("trade", 0) or 0)
         if price == 0:
             continue
+        change_pct = float(item.get("changepercent", 0) or 0)
+        if min_change_pct is not None and change_pct < min_change_pct:
+            continue
         stocks.append({
             "code": item["code"],
             "name": item["name"],
             "price": price,
-            "change_pct": float(item.get("changepercent", 0) or 0),
+            "change_pct": change_pct,
             "volume": int(float(item.get("volume", 0) or 0)),
             "turnover_rate": float(item.get("turnoverratio", 0) or 0),
             "pe_ratio": float(item.get("per", 0) or 0),
@@ -94,11 +97,36 @@ def fetch_hot_sina(count=10):
     return stocks
 
 
+def fetch_hot_sina(count=10):
+    """保留原名字用于成交额榜(向后兼容)"""
+    return fetch_sina(count=count, sort="amount")
+
+
 @app.route("/api/stock/hot", methods=["GET"])
 def get_hot_stocks():
     count = request.args.get("count", 10, type=int)
     try:
         stocks = fetch_hot_sina(count)
+        return jsonify({"stocks": stocks})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/stock/gainers", methods=["GET"])
+def get_gainers():
+    count = request.args.get("count", 20, type=int)
+    try:
+        stocks = fetch_sina(count=count, sort="changepercent", min_change_pct=0.01)
+        return jsonify({"stocks": stocks})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/stock/active", methods=["GET"])
+def get_active():
+    count = request.args.get("count", 20, type=int)
+    try:
+        stocks = fetch_sina(count=count, sort="turnoverratio")
         return jsonify({"stocks": stocks})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
