@@ -159,3 +159,32 @@ func Test_Analyze_fallback_on_double_failure(t *testing.T) {
 		t.Errorf("expected exactly 2 AI calls before fallback, got %d", calls)
 	}
 }
+
+func Test_Analyze_no_retry_on_4xx(t *testing.T) {
+	var calls int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"error":{"message":"bad key"}}`))
+	}))
+	defer ts.Close()
+
+	a := NewStockAnalyzer("bad-key", ts.URL, "test-model")
+	res, err := a.Analyze(context.Background(), StockInfo{
+		Code: "000001", Name: "test",
+		ChangePct: 4.0, VolumeRatio: 1.8, TurnoverRate: 7.5,
+		FloatMarketCap: 100, Amplitude: 5.0,
+	})
+	if err != nil {
+		t.Fatalf("Analyze should fall back without error, got: %v", err)
+	}
+	if !res.IsFallback {
+		t.Error("expected IsFallback=true on 4xx")
+	}
+	if calls != 1 {
+		t.Errorf("expected exactly 1 call (no retry on 4xx), got %d", calls)
+	}
+	if res.BuyScore != 7 {
+		t.Errorf("expected cap-7 fallback, got %d", res.BuyScore)
+	}
+}
