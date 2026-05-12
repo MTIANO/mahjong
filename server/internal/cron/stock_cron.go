@@ -139,6 +139,7 @@ func (sc *StockCron) analyzeAndStore(stocks []service.StockInfo, source string) 
 			KeySignals:   result.KeySignals,
 			RiskLevel:    result.RiskLevel,
 			TrapWarning:  result.TrapWarning,
+			IsFallback:   result.IsFallback,
 			AnalysisDate: today,
 		}
 

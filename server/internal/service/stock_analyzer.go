@@ -20,6 +20,7 @@ type AnalysisResult struct {
 	KeySignals  string `json:"key_signals"`
 	RiskLevel   int    `json:"risk_level"`
 	TrapWarning string `json:"trap_warning"`
+	IsFallback  bool   `json:"is_fallback"`
 }
 
 type StockAnalyzer struct {
@@ -123,7 +124,37 @@ type chatResponse struct {
 }
 
 func (a *StockAnalyzer) Analyze(ctx context.Context, stock StockInfo) (*AnalysisResult, error) {
-	prompt := buildAnalysisPrompt(stock)
+	// Level 1
+	res, err := a.callOnce(ctx, stock, "")
+	if err == nil {
+		return res, nil
+	}
+	log.Printf("[StockAnalyzer] %s(%s) L1 failed: %v, retrying", stock.Name, stock.Code, err)
+
+	// Level 2: 仅对 parse 失败 / 非 4xx 的错误重试
+	if isNonRetryable(err) {
+		log.Printf("[StockAnalyzer] %s(%s) non-retryable, falling back", stock.Name, stock.Code)
+	} else {
+		res, err = a.callOnce(ctx, stock, "\n\n⚠️ 上一次返回的不是合法 JSON,请严格只输出 JSON 对象,不要任何前后缀。")
+		if err == nil {
+			return res, nil
+		}
+		log.Printf("[StockAnalyzer] %s(%s) L2 failed: %v, falling back", stock.Name, stock.Code, err)
+	}
+
+	// Level 3
+	fb := fallbackScore(stock)
+	fb.IsFallback = true
+	return fb, nil
+}
+
+func isNonRetryable(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "returned 4") // HTTP 4xx
+}
+
+func (a *StockAnalyzer) callOnce(ctx context.Context, stock StockInfo, extraUserSuffix string) (*AnalysisResult, error) {
+	prompt := buildAnalysisPrompt(stock) + extraUserSuffix
 
 	reqBody := chatRequest{
 		Model: a.model,
