@@ -50,3 +50,49 @@ func TestBuildAnalysisPrompt(t *testing.T) {
 		t.Error("expected non-empty prompt")
 	}
 }
+
+func Test_fallbackScore_bucketing(t *testing.T) {
+	// 5 项指标全部命中 2 分区间 → 合计 10 → buy_score cap 至 7
+	strong := StockInfo{
+		Code: "000001", Name: "平安银行",
+		ChangePct: 4.0, VolumeRatio: 1.8, TurnoverRate: 7.5,
+		FloatMarketCap: 100, Amplitude: 5.0,
+	}
+	res := fallbackScore(strong)
+	if res.BuyScore != 7 {
+		t.Errorf("strong: buy_score want 7 (capped), got %d", res.BuyScore)
+	}
+	if res.TailScore != 7 {
+		t.Errorf("strong: tail_score want 7, got %d", res.TailScore)
+	}
+	if res.RiskLevel != 1 {
+		t.Errorf("strong: risk want 1, got %d", res.RiskLevel)
+	}
+	if res.BuyReason != "AI 服务异常,规则兜底评分" {
+		t.Errorf("unexpected buy_reason: %q", res.BuyReason)
+	}
+
+	// 全 0 字段 → 合计 0 → buy_score 0 (最低档) → risk clamp 到 5
+	empty := StockInfo{Code: "000002", Name: "test"}
+	res = fallbackScore(empty)
+	if res.BuyScore != 0 {
+		t.Errorf("empty: buy_score want 0, got %d", res.BuyScore)
+	}
+	if res.RiskLevel != 5 {
+		t.Errorf("empty: risk want 5, got %d", res.RiskLevel)
+	}
+
+	// 中等:涨幅 2%(1分)、量比 1.2(1分)、换手 3%(1分)、流通 40 亿(1分)、振幅 2%(1分) = 5
+	mid := StockInfo{
+		Code: "600000", Name: "浦发银行",
+		ChangePct: 2.0, VolumeRatio: 1.2, TurnoverRate: 3.0,
+		FloatMarketCap: 40, Amplitude: 2.0,
+	}
+	res = fallbackScore(mid)
+	if res.BuyScore != 5 {
+		t.Errorf("mid: buy_score want 5, got %d", res.BuyScore)
+	}
+	if res.RiskLevel != 4 {
+		t.Errorf("mid: risk want 4 (total=5, 6 - 5/2(int) = 4), got %d", res.RiskLevel)
+	}
+}

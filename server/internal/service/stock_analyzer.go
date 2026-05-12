@@ -195,3 +195,67 @@ func parseAnalysisResult(raw string) (*AnalysisResult, error) {
 	}
 	return &result, nil
 }
+
+// fallbackScore 基于 pre-filter 可用指标做规则打分,用于 AI 不可用时兜底入库。
+// 每项 0-2 分,合计 0-10;为避免规则分混入"强烈推荐"区,buy/tail_score 硬 cap 到 7。
+func fallbackScore(stock StockInfo) *AnalysisResult {
+	total := 0
+
+	c := stock.ChangePct
+	if c >= 3 && c <= 5 {
+		total += 2
+	} else if (c >= 0.5 && c < 3) || (c > 5 && c <= 9.5) {
+		total += 1
+	}
+
+	if stock.VolumeRatio >= 1.5 {
+		total += 2
+	} else if stock.VolumeRatio >= 1.0 {
+		total += 1
+	}
+
+	tr := stock.TurnoverRate
+	if tr >= 5 && tr <= 10 {
+		total += 2
+	} else if (tr >= 2 && tr < 5) || (tr > 10 && tr <= 20) {
+		total += 1
+	}
+
+	f := stock.FloatMarketCap
+	if f >= 50 && f <= 200 {
+		total += 2
+	} else if (f >= 20 && f < 50) || (f > 200 && f <= 500) {
+		total += 1
+	}
+
+	a := stock.Amplitude
+	if a >= 3 && a <= 8 {
+		total += 2
+	} else if (a >= 1 && a < 3) || (a > 8 && a <= 12) {
+		total += 1
+	}
+
+	capped := total
+	if capped > 7 {
+		capped = 7
+	}
+	risk := 6 - total/2
+	if risk < 1 {
+		risk = 1
+	}
+	if risk > 5 {
+		risk = 5
+	}
+
+	signals := fmt.Sprintf("涨%.2f%% 量比%.2f 换手%.2f%% 流通%.0f亿", stock.ChangePct, stock.VolumeRatio, stock.TurnoverRate, stock.FloatMarketCap)
+
+	return &AnalysisResult{
+		BuyScore:    capped,
+		BuyReason:   "AI 服务异常,规则兜底评分",
+		TailScore:   capped,
+		TailReason:  "AI 服务异常,规则兜底评分",
+		KeySignals:  signals,
+		RiskLevel:   risk,
+		TrapWarning: "",
+	}
+}
