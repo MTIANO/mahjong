@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/mtiano/server/internal/service"
@@ -69,5 +70,19 @@ func Test_preFilterStocks_relaxed(t *testing.T) {
 		if passed != c.passed {
 			t.Errorf("%s: want passed=%v, got %v", c.name, c.passed, passed)
 		}
+	}
+}
+
+var errBoom = fmt.Errorf("boom")
+
+// Test_fetchCandidatePool_singleSourceFailure 验证三榜中两路失败,剩余一路仍能贡献候选
+func Test_fetchCandidatePool_singleSourceFailure(t *testing.T) {
+	hot := []service.StockInfo{{Code: "600519", Name: "贵州茅台"}}
+	var gainersErr, activeErr error = errBoom, errBoom
+	var gainersList, activeList []service.StockInfo
+
+	merged := mergeCandidates(hot, nil, gainersList, gainersErr, activeList, activeErr)
+	if len(merged) != 1 || merged[0].Code != "600519" {
+		t.Fatalf("expected 1 candidate from hot-only, got %+v", merged)
 	}
 }

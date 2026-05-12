@@ -71,27 +71,43 @@ func (sc *StockCron) analyzeWatchlistStocks() {
 }
 
 func (sc *StockCron) analyzeHotStocks() {
-	log.Println("[Cron] starting hot stock analysis (with pre-filter)")
-	stocks, err := sc.stockData.GetHotStocks(30)
-	if err != nil {
-		log.Printf("[Cron] get hot stocks: %v", err)
+	log.Println("[Cron] starting hot stock analysis (3-source pool)")
+
+	hot, hotErr := sc.stockData.GetHotStocks(20)
+	if hotErr != nil {
+		log.Printf("[Cron] fetch hot failed: %v", hotErr)
+	}
+	gainers, gainersErr := sc.stockData.GetGainers(20)
+	if gainersErr != nil {
+		log.Printf("[Cron] fetch gainers failed: %v", gainersErr)
+	}
+	active, activeErr := sc.stockData.GetActive(20)
+	if activeErr != nil {
+		log.Printf("[Cron] fetch active failed: %v", activeErr)
+	}
+
+	merged := mergeCandidates(hot, hotErr, gainers, gainersErr, active, activeErr)
+	if len(merged) == 0 {
+		log.Println("[Cron] all three sources failed, aborting hot analysis")
 		return
 	}
 
-	filtered := sc.preFilterStocks(stocks)
+	filtered := sc.preFilterStocks(merged)
+	log.Printf("[Cron] candidate pool: hot=%d gainers=%d active=%d merged=%d filtered=%d",
+		len(hot), len(gainers), len(active), len(merged), len(filtered))
+
 	if len(filtered) == 0 {
-		log.Println("[Cron] no hot stocks passed pre-filter, analyzing top 5 by volume")
-		if len(stocks) > 5 {
-			stocks = stocks[:5]
+		log.Println("[Cron] no candidates passed pre-filter, analyzing top 5 of merged pool")
+		if len(merged) > 5 {
+			merged = merged[:5]
 		}
-		sc.analyzeAndStore(stocks, "hot")
+		sc.analyzeAndStore(merged, "hot")
 		return
 	}
 
-	if len(filtered) > 10 {
-		filtered = filtered[:10]
+	if len(filtered) > 20 {
+		filtered = filtered[:20]
 	}
-	log.Printf("[Cron] %d/%d hot stocks passed pre-filter", len(filtered), len(stocks))
 	sc.analyzeAndStore(filtered, "hot")
 }
 
@@ -170,4 +186,19 @@ func dedupByCode(lists ...[]service.StockInfo) []service.StockInfo {
 		}
 	}
 	return merged
+}
+
+// mergeCandidates 合并三榜,任一路的 err 非 nil 时跳过该路,返回去重后的候选池。
+func mergeCandidates(hot []service.StockInfo, hotErr error, gainers []service.StockInfo, gainersErr error, active []service.StockInfo, activeErr error) []service.StockInfo {
+	var lists [][]service.StockInfo
+	if hotErr == nil && len(hot) > 0 {
+		lists = append(lists, hot)
+	}
+	if gainersErr == nil && len(gainers) > 0 {
+		lists = append(lists, gainers)
+	}
+	if activeErr == nil && len(active) > 0 {
+		lists = append(lists, active)
+	}
+	return dedupByCode(lists...)
 }
