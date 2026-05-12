@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type AnalysisResult struct {
@@ -154,6 +155,9 @@ func isNonRetryable(err error) bool {
 }
 
 func (a *StockAnalyzer) callOnce(ctx context.Context, stock StockInfo, extraUserSuffix string) (*AnalysisResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	prompt := buildAnalysisPrompt(stock) + extraUserSuffix
 
 	reqBody := chatRequest{
