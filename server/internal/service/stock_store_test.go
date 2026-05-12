@@ -88,34 +88,45 @@ func TestStockStore_Recommendations(t *testing.T) {
 	store := NewStockStore(db)
 
 	today := time.Now().Format("2006-01-02")
-	defer db.Exec("DELETE FROM stock_recommendations WHERE analysis_date = ? AND stock_code = '600519'", today)
+	defer db.Exec("DELETE FROM stock_recommendations WHERE analysis_date = ? AND stock_code IN ('600519','000001')", today)
 
 	rec := &model.StockRecommendation{
-		StockCode:    "600519",
-		StockName:    "贵州茅台",
-		Source:       "hot",
-		BuyScore:     8,
-		BuyReason:    "test buy reason",
-		TailScore:    6,
-		TailReason:   "test tail reason",
-		AnalysisDate: today,
+		StockCode: "600519", StockName: "贵州茅台", Source: "hot",
+		BuyScore: 8, BuyReason: "test buy reason",
+		TailScore: 6, TailReason: "test tail reason",
+		IsFallback: false, AnalysisDate: today,
 	}
-	err := store.UpsertRecommendation(rec)
-	if err != nil {
-		t.Fatalf("UpsertRecommendation: %v", err)
+	if err := store.UpsertRecommendation(rec); err != nil {
+		t.Fatalf("UpsertRecommendation(ai): %v", err)
 	}
 
-	recs, err := store.GetTodayRecommendations("", 0)
+	fbRec := &model.StockRecommendation{
+		StockCode: "000001", StockName: "平安银行", Source: "hot",
+		BuyScore: 6, BuyReason: "AI 服务异常,规则兜底评分",
+		TailScore: 6, TailReason: "AI 服务异常,规则兜底评分",
+		IsFallback: true, AnalysisDate: today,
+	}
+	if err := store.UpsertRecommendation(fbRec); err != nil {
+		t.Fatalf("UpsertRecommendation(fallback): %v", err)
+	}
+
+	recs, err := store.GetTodayRecommendations("hot", 0)
 	if err != nil {
 		t.Fatalf("GetTodayRecommendations: %v", err)
 	}
-	found := false
+	var found600519, found000001 bool
 	for _, r := range recs {
-		if r.StockCode == "600519" && r.BuyScore == 8 {
-			found = true
+		if r.StockCode == "600519" && r.BuyScore == 8 && r.IsFallback == false {
+			found600519 = true
+		}
+		if r.StockCode == "000001" && r.BuyScore == 6 && r.IsFallback == true {
+			found000001 = true
 		}
 	}
-	if !found {
-		t.Error("expected to find recommendation for 600519")
+	if !found600519 {
+		t.Error("expected AI rec for 600519 with IsFallback=false")
+	}
+	if !found000001 {
+		t.Error("expected fallback rec for 000001 with IsFallback=true")
 	}
 }

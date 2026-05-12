@@ -88,8 +88,8 @@ func (s *StockStore) GetAllWatchlistCodes() ([]string, error) {
 
 func (s *StockStore) UpsertRecommendation(rec *model.StockRecommendation) error {
 	_, err := s.db.Exec(`
-		INSERT INTO stock_recommendations (stock_code, stock_name, source, buy_score, buy_reason, tail_score, tail_reason, key_signals, risk_level, trap_warning, analysis_date)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO stock_recommendations (stock_code, stock_name, source, buy_score, buy_reason, tail_score, tail_reason, key_signals, risk_level, trap_warning, is_fallback, analysis_date)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 			stock_name = VALUES(stock_name),
 			buy_score = VALUES(buy_score),
@@ -99,15 +99,16 @@ func (s *StockStore) UpsertRecommendation(rec *model.StockRecommendation) error 
 			key_signals = VALUES(key_signals),
 			risk_level = VALUES(risk_level),
 			trap_warning = VALUES(trap_warning),
+			is_fallback = VALUES(is_fallback),
 			updated_at = CURRENT_TIMESTAMP`,
-		rec.StockCode, rec.StockName, rec.Source, rec.BuyScore, rec.BuyReason, rec.TailScore, rec.TailReason, rec.KeySignals, rec.RiskLevel, rec.TrapWarning, rec.AnalysisDate,
+		rec.StockCode, rec.StockName, rec.Source, rec.BuyScore, rec.BuyReason, rec.TailScore, rec.TailReason, rec.KeySignals, rec.RiskLevel, rec.TrapWarning, rec.IsFallback, rec.AnalysisDate,
 	)
 	return err
 }
 
 func (s *StockStore) GetTodayRecommendations(source string, userID int64) ([]model.StockRecommendation, error) {
 	today := time.Now().Format("2006-01-02")
-	query := "SELECT id, stock_code, stock_name, source, buy_score, buy_reason, tail_score, tail_reason, COALESCE(key_signals, '') as key_signals, COALESCE(risk_level, 0) as risk_level, COALESCE(trap_warning, '') as trap_warning, analysis_date, created_at, updated_at FROM stock_recommendations WHERE analysis_date = ?"
+	query := "SELECT id, stock_code, stock_name, source, buy_score, buy_reason, tail_score, tail_reason, COALESCE(key_signals, '') as key_signals, COALESCE(risk_level, 0) as risk_level, COALESCE(trap_warning, '') as trap_warning, COALESCE(is_fallback, 0) as is_fallback, analysis_date, created_at, updated_at FROM stock_recommendations WHERE analysis_date = ?"
 	args := []any{today}
 
 	if source != "" {
@@ -129,7 +130,7 @@ func (s *StockStore) GetTodayRecommendations(source string, userID int64) ([]mod
 	var recs []model.StockRecommendation
 	for rows.Next() {
 		var r model.StockRecommendation
-		if err := rows.Scan(&r.ID, &r.StockCode, &r.StockName, &r.Source, &r.BuyScore, &r.BuyReason, &r.TailScore, &r.TailReason, &r.KeySignals, &r.RiskLevel, &r.TrapWarning, &r.AnalysisDate, &r.CreatedAt, &r.UpdatedAt); err != nil {
+		if err := rows.Scan(&r.ID, &r.StockCode, &r.StockName, &r.Source, &r.BuyScore, &r.BuyReason, &r.TailScore, &r.TailReason, &r.KeySignals, &r.RiskLevel, &r.TrapWarning, &r.IsFallback, &r.AnalysisDate, &r.CreatedAt, &r.UpdatedAt); err != nil {
 			return nil, err
 		}
 		recs = append(recs, r)

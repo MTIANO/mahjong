@@ -16,5 +16,6 @@ type StockRecommendation struct {
 	TrapWarning  string    `json:"trap_warning"`
 	AnalysisDate string    `json:"analysis_date"`
 	CreatedAt    time.Time `json:"created_at"`
+	IsFallback   bool      `json:"is_fallback"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }

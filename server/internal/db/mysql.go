@@ -65,6 +65,7 @@ func createTables(db *sql.DB) error {
 		"ALTER TABLE stock_recommendations ADD COLUMN key_signals VARCHAR(100) DEFAULT '' AFTER tail_reason",
 		"ALTER TABLE stock_recommendations ADD COLUMN risk_level TINYINT DEFAULT 0 AFTER key_signals",
 		"ALTER TABLE stock_recommendations ADD COLUMN trap_warning VARCHAR(100) DEFAULT '' AFTER risk_level",
+		"ALTER TABLE stock_recommendations ADD COLUMN is_fallback TINYINT(1) NOT NULL DEFAULT 0 AFTER trap_warning",
 	}
 	for _, m := range migrations {
 		db.Exec(m)
