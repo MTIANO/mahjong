@@ -14,8 +14,8 @@ type StockRecommendation struct {
 	KeySignals   string    `json:"key_signals"`
 	RiskLevel    int       `json:"risk_level"`
 	TrapWarning  string    `json:"trap_warning"`
+	IsFallback   bool      `json:"is_fallback"`
 	AnalysisDate string    `json:"analysis_date"`
 	CreatedAt    time.Time `json:"created_at"`
-	IsFallback   bool      `json:"is_fallback"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
