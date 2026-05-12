@@ -60,7 +60,17 @@ def fetch_stocks_qq(codes):
 
 
 def fetch_sina(count=10, sort="amount", min_change_pct=None):
-    """新浪 Market_Center 通用查询"""
+    """新浪 Market_Center 通用行情查询。
+
+    Args:
+        count: 返回股票数量。
+        sort: 排序字段,新浪支持的值包括 "amount"(成交额)、
+              "changepercent"(涨幅)、"turnoverratio"(换手率)。
+        min_change_pct: 涨幅下限(百分比数值,非小数)。例如 0.01 表示
+              涨幅 ≥ 0.01%(等效于"剔除平盘和下跌股");3.0 表示 ≥ 3%。
+              None 表示不过滤。Sina 的 changepercent 字段本身就是百分比
+              数值(如 3.5 代表 +3.5%),故此参数保持同一单位。
+    """
     url = (
         "https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/"
         "Market_Center.getHQNodeData"
@@ -75,6 +85,8 @@ def fetch_sina(count=10, sort="amount", min_change_pct=None):
     }
     resp = requests.get(url, headers=HEADERS, params=params, timeout=10)
     data = resp.json()
+    if not isinstance(data, list):
+        return []
 
     stocks = []
     for item in data:
