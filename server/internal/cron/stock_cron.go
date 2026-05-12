@@ -3,6 +3,7 @@ package cron
 import (
 	"context"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/mtiano/server/internal/model"
@@ -97,19 +98,23 @@ func (sc *StockCron) analyzeHotStocks() {
 func (sc *StockCron) preFilterStocks(stocks []service.StockInfo) []service.StockInfo {
 	var passed []service.StockInfo
 	for _, s := range stocks {
-		if s.ChangePct < 1 || s.ChangePct > 7 {
+		// ST / 退市 股直接刷掉
+		if strings.Contains(s.Name, "ST") || strings.Contains(s.Name, "退") {
 			continue
 		}
-		if s.TurnoverRate > 0 && (s.TurnoverRate < 3 || s.TurnoverRate > 15) {
+		if s.ChangePct < 0.5 || s.ChangePct > 9.5 {
 			continue
 		}
-		if s.VolumeRatio > 0 && s.VolumeRatio < 0.8 {
+		if s.TurnoverRate > 0 && (s.TurnoverRate < 2 || s.TurnoverRate > 20) {
 			continue
 		}
-		if s.FloatMarketCap > 0 && (s.FloatMarketCap < 30 || s.FloatMarketCap > 300) {
+		if s.VolumeRatio > 0 && s.VolumeRatio < 0.6 {
 			continue
 		}
-		if s.PERatio < 0 || s.PERatio > 200 {
+		if s.FloatMarketCap > 0 && (s.FloatMarketCap < 20 || s.FloatMarketCap > 500) {
+			continue
+		}
+		if s.PERatio < -1000 || s.PERatio > 300 {
 			continue
 		}
 		passed = append(passed, s)
