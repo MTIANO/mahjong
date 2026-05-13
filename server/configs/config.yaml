@@ -26,6 +26,6 @@ stock:
 #  scorer_model: "deepseek-v4-pro"
 #  scorer_api_key: "sk-b9704df0a06645948adb70582dcd26dd"  # 务必先去 DeepSeek 控制台 rotate 一个新 key
 #  scorer_endpoint: "https://api.deepseek.com/v1"
-  scorer_model: "qwen-max-latest"
-  scorer_api_key: "sk-c8454d49077c4827a2919b023283d588"
-  scorer_endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  scorer_model: "deepseek-v4-flash"
+  scorer_api_key: "sk-b9704df0a06645948adb70582dcd26dd"
+  scorer_endpoint: "https://api.deepseek.com/v1"
