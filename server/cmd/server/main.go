@@ -37,9 +37,10 @@ func main() {
 	store := service.NewStockStore(mysqlDB)
 	authService := service.NewAuthService(cfg.WeChat.AppID, cfg.WeChat.Secret, cfg.JWT.Secret, cfg.JWT.ExpireHours, store)
 	stockDataService := service.NewStockDataService(cfg.Stock.AKShareEndpoint)
-	stockAnalyzer := service.NewStockAnalyzer(cfg.Stock.AIAPIKey, cfg.Stock.AIEndpoint, cfg.Stock.AIModel)
+	stockAnalyzer := service.NewStockAnalyzer(cfg.Stock.ScorerAPIKey, cfg.Stock.ScorerEndpoint, cfg.Stock.ScorerModel)
+	themeScout := service.NewThemeScout(cfg.Stock.ThemeAPIKey, cfg.Stock.ThemeEndpoint, cfg.Stock.ThemeModel)
 
-	cronJob := stockcron.NewStockCron(store, stockDataService, stockAnalyzer)
+	cronJob := stockcron.NewStockCron(store, stockDataService, stockAnalyzer, themeScout)
 	cronJob.Start()
 	defer cronJob.Stop()
 

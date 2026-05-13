@@ -12,18 +12,20 @@ import (
 )
 
 type StockCron struct {
-	scheduler *cron.Cron
-	store     *service.StockStore
-	stockData *service.StockDataService
-	analyzer  *service.StockAnalyzer
+	scheduler  *cron.Cron
+	store      *service.StockStore
+	stockData  *service.StockDataService
+	analyzer   *service.StockAnalyzer
+	themeScout *service.ThemeScout
 }
 
-func NewStockCron(store *service.StockStore, stockData *service.StockDataService, analyzer *service.StockAnalyzer) *StockCron {
+func NewStockCron(store *service.StockStore, stockData *service.StockDataService, analyzer *service.StockAnalyzer, themeScout *service.ThemeScout) *StockCron {
 	return &StockCron{
-		scheduler: cron.New(),
-		store:     store,
-		stockData: stockData,
-		analyzer:  analyzer,
+		scheduler:  cron.New(),
+		store:      store,
+		stockData:  stockData,
+		analyzer:   analyzer,
+		themeScout: themeScout,
 	}
 }
 
@@ -72,7 +74,8 @@ func (sc *StockCron) analyzeWatchlistStocks() {
 		return
 	}
 
-	sc.analyzeAndStore(stocks, "watchlist")
+	themes := sc.themeScout.FetchThemes(context.Background())
+	sc.analyzeAndStore(stocks, "watchlist", themes)
 }
 
 func (sc *StockCron) analyzeHotStocks() {
@@ -105,19 +108,22 @@ func (sc *StockCron) analyzeHotStocks() {
 	log.Printf("[Cron] candidate pool: hot=%d gainers=%d active=%d merged=%d hydrated=%d filtered=%d",
 		len(hot), len(gainers), len(active), len(merged), len(hydrated), len(filtered))
 
+	// 每次 cron 触发都调一次 Qwen 拿今日热点,作为 DeepSeek 打分的参考信号
+	themes := sc.themeScout.FetchThemes(context.Background())
+
 	if len(filtered) == 0 {
 		log.Println("[Cron] no candidates passed pre-filter, analyzing top 5 of merged pool")
 		if len(merged) > 5 {
 			merged = merged[:5]
 		}
-		sc.analyzeAndStore(merged, "hot")
+		sc.analyzeAndStore(merged, "hot", themes)
 		return
 	}
 
 	if len(filtered) > 20 {
 		filtered = filtered[:20]
 	}
-	sc.analyzeAndStore(filtered, "hot")
+	sc.analyzeAndStore(filtered, "hot", themes)
 }
 
 func (sc *StockCron) preFilterStocks(stocks []service.StockInfo) []service.StockInfo {
@@ -147,12 +153,12 @@ func (sc *StockCron) preFilterStocks(stocks []service.StockInfo) []service.Stock
 	return passed
 }
 
-func (sc *StockCron) analyzeAndStore(stocks []service.StockInfo, source string) {
+func (sc *StockCron) analyzeAndStore(stocks []service.StockInfo, source string, themes []string) {
 	today := time.Now().Format("2006-01-02")
 	ctx := context.Background()
 
 	for _, stock := range stocks {
-		result, err := sc.analyzer.Analyze(ctx, stock)
+		result, err := sc.analyzer.Analyze(ctx, stock, themes)
 		if err != nil {
 			log.Printf("[Cron] analyze %s(%s): %v", stock.Name, stock.Code, err)
 			continue

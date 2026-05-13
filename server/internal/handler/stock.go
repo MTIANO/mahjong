@@ -74,7 +74,8 @@ func (h *StockHandler) AddWatchlist(c *gin.Context) {
 }
 
 func (h *StockHandler) analyzeStock(stock service.StockInfo) {
-	result, err := h.analyzer.Analyze(context.Background(), stock)
+	// 手动添加自选时即时打分:不预先调 ThemeScout 节省成本;下次 cron 触发会带 themes 重新打分覆盖
+	result, err := h.analyzer.Analyze(context.Background(), stock, nil)
 	if err != nil {
 		log.Printf("[StockHandler] analyze %s(%s) failed: %v", stock.Name, stock.Code, err)
 		return

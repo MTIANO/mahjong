@@ -42,9 +42,14 @@ type JWTConfig struct {
 
 type StockConfig struct {
 	AKShareEndpoint string `yaml:"akshare_endpoint"`
-	AIModel         string `yaml:"ai_model"`
-	AIAPIKey        string `yaml:"ai_api_key"`
-	AIEndpoint      string `yaml:"ai_endpoint"`
+	// 题材初筛(Qwen):每次 cron 调一次,产出今日热点板块列表
+	ThemeModel    string `yaml:"theme_model"`
+	ThemeAPIKey   string `yaml:"theme_api_key"`
+	ThemeEndpoint string `yaml:"theme_endpoint"`
+	// 精打分(DeepSeek):每只股调一次,基于盘口 + 注入的热点列表打分
+	ScorerModel    string `yaml:"scorer_model"`
+	ScorerAPIKey   string `yaml:"scorer_api_key"`
+	ScorerEndpoint string `yaml:"scorer_endpoint"`
 }
 
 func Load(path string) (*Config, error) {

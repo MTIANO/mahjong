@@ -124,9 +124,11 @@ type chatResponse struct {
 	} `json:"error,omitempty"`
 }
 
-func (a *StockAnalyzer) Analyze(ctx context.Context, stock StockInfo) (*AnalysisResult, error) {
+// Analyze 调 AI 做尾盘短线打分。themes 是当次 cron 由 ThemeScout 拉到的"今日热点板块"列表,
+// 作为参考信号注入 user prompt;为空则 prompt 退化为不带题材提示版本(向后兼容)。
+func (a *StockAnalyzer) Analyze(ctx context.Context, stock StockInfo, themes []string) (*AnalysisResult, error) {
 	// Level 1
-	res, err := a.callOnce(ctx, stock, "")
+	res, err := a.callOnce(ctx, stock, themes, "")
 	if err == nil {
 		return res, nil
 	}
@@ -136,7 +138,7 @@ func (a *StockAnalyzer) Analyze(ctx context.Context, stock StockInfo) (*Analysis
 	if isNonRetryable(err) {
 		log.Printf("[StockAnalyzer] %s(%s) non-retryable, falling back", stock.Name, stock.Code)
 	} else {
-		res, err = a.callOnce(ctx, stock, "\n\n⚠️ 上一次返回的不是合法 JSON,请严格只输出 JSON 对象,不要任何前后缀。")
+		res, err = a.callOnce(ctx, stock, themes, "\n\n⚠️ 上一次返回的不是合法 JSON,请严格只输出 JSON 对象,不要任何前后缀。")
 		if err == nil {
 			return res, nil
 		}
@@ -154,11 +156,15 @@ func isNonRetryable(err error) bool {
 	return strings.Contains(msg, "returned 4") // HTTP 4xx
 }
 
-func (a *StockAnalyzer) callOnce(ctx context.Context, stock StockInfo, extraUserSuffix string) (*AnalysisResult, error) {
+func (a *StockAnalyzer) callOnce(ctx context.Context, stock StockInfo, themes []string, extraUserSuffix string) (*AnalysisResult, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	prompt := buildAnalysisPrompt(stock) + extraUserSuffix
+	prompt := buildAnalysisPrompt(stock)
+	if hint := FormatThemesForPrompt(themes); hint != "" {
+		prompt += "\n\n" + hint
+	}
+	prompt += extraUserSuffix
 
 	reqBody := chatRequest{
 		Model: a.model,

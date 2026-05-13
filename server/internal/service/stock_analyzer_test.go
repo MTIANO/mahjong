@@ -116,7 +116,7 @@ func Test_Analyze_retry_on_non_json(t *testing.T) {
 	defer ts.Close()
 
 	a := NewStockAnalyzer("test-key", ts.URL, "test-model")
-	res, err := a.Analyze(context.Background(), StockInfo{Code: "600519", Name: "贵州茅台", ChangePct: 3.0})
+	res, err := a.Analyze(context.Background(), StockInfo{Code: "600519", Name: "贵州茅台", ChangePct: 3.0}, nil)
 	if err != nil {
 		t.Fatalf("Analyze: %v", err)
 	}
@@ -145,7 +145,7 @@ func Test_Analyze_fallback_on_double_failure(t *testing.T) {
 		Code: "000001", Name: "平安银行",
 		ChangePct: 4.0, VolumeRatio: 1.8, TurnoverRate: 7.5,
 		FloatMarketCap: 100, Amplitude: 5.0,
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("Analyze should fall back, got err: %v", err)
 	}
@@ -174,7 +174,7 @@ func Test_Analyze_no_retry_on_4xx(t *testing.T) {
 		Code: "000001", Name: "test",
 		ChangePct: 4.0, VolumeRatio: 1.8, TurnoverRate: 7.5,
 		FloatMarketCap: 100, Amplitude: 5.0,
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("Analyze should fall back without error, got: %v", err)
 	}
