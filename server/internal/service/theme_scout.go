@@ -52,7 +52,7 @@ func (t *ThemeScout) FetchThemes(ctx context.Context) []string {
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
 	reqBody := chatRequest{
