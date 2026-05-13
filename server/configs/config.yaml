@@ -18,6 +18,6 @@ jwt:
 
 stock:
   akshare_endpoint: "http://localhost:5001"
-  ai_model: "qwen-max"
+  ai_model: "qwen3.6-max-preview"
   ai_api_key: "sk-c8454d49077c4827a2919b023283d588"
   ai_endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1"
