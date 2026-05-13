@@ -53,11 +53,15 @@ func Test_preFilterStocks_relaxed(t *testing.T) {
 		passed bool
 	}{
 		{"涨幅边界低(0.5%)通过", service.StockInfo{Code: "1", Name: "A", ChangePct: 0.5, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: 20}, true},
-		{"涨幅边界高(9.5%)通过", service.StockInfo{Code: "2", Name: "B", ChangePct: 9.5, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: 20}, true},
-		{"涨幅超界(10%)刷掉", service.StockInfo{Code: "3", Name: "C", ChangePct: 10, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: 20}, false},
+		{"涨停 10% 通过(允许涨停接力)", service.StockInfo{Code: "2", Name: "B", ChangePct: 10.0, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: 20}, true},
+		{"涨幅边界高(10.5%)通过", service.StockInfo{Code: "2b", Name: "B2", ChangePct: 10.5, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: 20}, true},
+		{"涨幅超界(11%)刷掉", service.StockInfo{Code: "3", Name: "C", ChangePct: 11, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: 20}, false},
 		{"PE 负值通过(放弃硬刷)", service.StockInfo{Code: "4", Name: "D", ChangePct: 3, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: -50}, true},
+		{"PE 1000 通过(放开短线估值上限)", service.StockInfo{Code: "4b", Name: "D2", ChangePct: 3, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: 1000}, true},
+		{"PE 1100 刷掉", service.StockInfo{Code: "4c", Name: "D3", ChangePct: 3, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: 1100}, false},
 		{"流通 20 亿通过", service.StockInfo{Code: "5", Name: "E", ChangePct: 3, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 20, PERatio: 20}, true},
-		{"流通 500 亿通过", service.StockInfo{Code: "6", Name: "F", ChangePct: 3, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 500, PERatio: 20}, true},
+		{"流通 14000 亿(大盘 AI 龙头)通过", service.StockInfo{Code: "6", Name: "F", ChangePct: 3, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 14000, PERatio: 20}, true},
+		{"流通 20001 亿刷掉(理论上限)", service.StockInfo{Code: "6b", Name: "F2", ChangePct: 3, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 20001, PERatio: 20}, false},
 		{"ST 股名直接刷掉", service.StockInfo{Code: "7", Name: "ST 康美", ChangePct: 3, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: 20}, false},
 		{"*ST 股名直接刷掉", service.StockInfo{Code: "8", Name: "*ST 海马", ChangePct: 3, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: 20}, false},
 		{"退市股直接刷掉", service.StockInfo{Code: "9", Name: "XX退", ChangePct: 3, TurnoverRate: 3, VolumeRatio: 1.0, FloatMarketCap: 50, PERatio: 20}, false},

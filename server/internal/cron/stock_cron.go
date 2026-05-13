@@ -133,7 +133,7 @@ func (sc *StockCron) preFilterStocks(stocks []service.StockInfo) []service.Stock
 		if strings.Contains(s.Name, "ST") || strings.Contains(s.Name, "退") {
 			continue
 		}
-		if s.ChangePct < 0.5 || s.ChangePct > 9.5 {
+		if s.ChangePct < 0.5 || s.ChangePct > 10.5 {
 			continue
 		}
 		if s.TurnoverRate > 0 && (s.TurnoverRate < 2 || s.TurnoverRate > 20) {
@@ -142,10 +142,10 @@ func (sc *StockCron) preFilterStocks(stocks []service.StockInfo) []service.Stock
 		if s.VolumeRatio > 0 && s.VolumeRatio < 0.6 {
 			continue
 		}
-		if s.FloatMarketCap > 0 && (s.FloatMarketCap < 20 || s.FloatMarketCap > 500) {
+		if s.FloatMarketCap > 0 && (s.FloatMarketCap < 20 || s.FloatMarketCap > 20000) {
 			continue
 		}
-		if s.PERatio < -1000 || s.PERatio > 300 {
+		if s.PERatio < -1000 || s.PERatio > 1000 {
 			continue
 		}
 		passed = append(passed, s)
