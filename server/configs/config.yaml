@@ -28,4 +28,4 @@ stock:
 #  scorer_endpoint: "https://api.deepseek.com/v1"
   scorer_model: "deepseek-v4-flash"
   scorer_api_key: "sk-b9704df0a06645948adb70582dcd26dd"
-  scorer_endpoint: "https://api.deepseek.com/v1"
+  scorer_endpoint: "https://api.deepseek.com/chat/completions"
