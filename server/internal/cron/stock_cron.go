@@ -28,17 +28,22 @@ func NewStockCron(store *service.StockStore, stockData *service.StockDataService
 }
 
 func (sc *StockCron) Start() {
-	// 上午盘中分析 9:30, 10:30, 11:30
-	sc.scheduler.AddFunc("30 9-11 * * 1-5", sc.analyzeWatchlistStocks)
-	sc.scheduler.AddFunc("30 9-11 * * 1-5", sc.analyzeHotStocks)
-	// 下午盘中分析 13:00, 14:00
-	sc.scheduler.AddFunc("0 13-14 * * 1-5", sc.analyzeWatchlistStocks)
-	sc.scheduler.AddFunc("0 13-14 * * 1-5", sc.analyzeHotStocks)
-	// 尾盘黄金窗口 14:30（主力最终表态期，最关键的一次分析）
-	sc.scheduler.AddFunc("30 14 * * 1-5", sc.analyzeWatchlistStocks)
-	sc.scheduler.AddFunc("30 14 * * 1-5", sc.analyzeHotStocks)
+	// 工作日交易时段:10:00 / 10:30 / 11:30 / 13:00 / 14:00 / 14:30
+	// 9:30 开盘瞬间盘口数据不稳定(涨幅/换手未充分形成),改为 10:00 起跑
+	schedules := []string{
+		"0 10 * * 1-5",  // 10:00
+		"30 10 * * 1-5", // 10:30
+		"30 11 * * 1-5", // 11:30
+		"0 13 * * 1-5",  // 13:00
+		"0 14 * * 1-5",  // 14:00
+		"30 14 * * 1-5", // 14:30 尾盘黄金窗口
+	}
+	for _, s := range schedules {
+		sc.scheduler.AddFunc(s, sc.analyzeWatchlistStocks)
+		sc.scheduler.AddFunc(s, sc.analyzeHotStocks)
+	}
 	sc.scheduler.Start()
-	log.Println("[Cron] stock analysis cron started (9:30-11:30, 13:00-14:00, 14:30 weekdays)")
+	log.Println("[Cron] stock analysis cron started (10:00 / 10:30 / 11:30 / 13:00 / 14:00 / 14:30 weekdays)")
 }
 
 func (sc *StockCron) Stop() {
@@ -92,9 +97,13 @@ func (sc *StockCron) analyzeHotStocks() {
 		return
 	}
 
-	filtered := sc.preFilterStocks(merged)
-	log.Printf("[Cron] candidate pool: hot=%d gainers=%d active=%d merged=%d filtered=%d",
-		len(hot), len(gainers), len(active), len(merged), len(filtered))
+	// Sina list 字段稀薄(无 volume_ratio / amplitude / float_market_cap / high/low/open/prev_close),
+	// 走腾讯 detail 接口 hydrate,让 pre-filter 和 AI 都看到完整盘口。
+	hydrated := sc.hydrateStockDetails(merged)
+
+	filtered := sc.preFilterStocks(hydrated)
+	log.Printf("[Cron] candidate pool: hot=%d gainers=%d active=%d merged=%d hydrated=%d filtered=%d",
+		len(hot), len(gainers), len(active), len(merged), len(hydrated), len(filtered))
 
 	if len(filtered) == 0 {
 		log.Println("[Cron] no candidates passed pre-filter, analyzing top 5 of merged pool")
@@ -186,6 +195,48 @@ func dedupByCode(lists ...[]service.StockInfo) []service.StockInfo {
 		}
 	}
 	return merged
+}
+
+// hydrateStockDetails 用腾讯 detail 接口补全字段。
+// Sina list 只返回 8 个字段(无 volume_ratio / amplitude / float_market_cap / high/low/open/prev_close);
+// 腾讯 detail 返回 14 字段,让 pre-filter 和 AI prompt 看到完整盘口。
+// 分批 25 只一次,避免 URL 过长触发腾讯接口限制。
+// 任一批失败 log + 降级使用原数据;codes 顺序保留。
+func (sc *StockCron) hydrateStockDetails(stocks []service.StockInfo) []service.StockInfo {
+	if len(stocks) == 0 {
+		return stocks
+	}
+	const batchSize = 25
+	hydratedByCode := make(map[string]service.StockInfo, len(stocks))
+	for i := 0; i < len(stocks); i += batchSize {
+		end := i + batchSize
+		if end > len(stocks) {
+			end = len(stocks)
+		}
+		codes := make([]string, 0, end-i)
+		for _, s := range stocks[i:end] {
+			codes = append(codes, s.Code)
+		}
+		detail, err := sc.stockData.GetStockDetails(codes)
+		if err != nil {
+			log.Printf("[Cron] hydrate batch [%d,%d) failed: %v", i, end, err)
+			continue
+		}
+		for _, d := range detail {
+			hydratedByCode[d.Code] = d
+		}
+	}
+
+	out := make([]service.StockInfo, 0, len(stocks))
+	for _, s := range stocks {
+		if d, ok := hydratedByCode[s.Code]; ok {
+			out = append(out, d)
+		} else {
+			// 腾讯没拿到这只,保留 Sina 原数据(字段稀薄但至少有 code/name/price/change_pct)
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // mergeCandidates 合并三榜,任一路的 err 非 nil 时跳过该路,返回去重后的候选池。
