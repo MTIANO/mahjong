@@ -130,7 +130,7 @@ func (a *StockAnalyzer) Analyze(ctx context.Context, stock StockInfo, themes []s
 	// Level 1
 	res, err := a.callOnce(ctx, stock, themes, "")
 	if err == nil {
-		return res, nil
+		return annotateLimitUp(res, stock), nil
 	}
 	log.Printf("[StockAnalyzer] %s(%s) L1 failed: %v, retrying", stock.Name, stock.Code, err)
 
@@ -140,7 +140,7 @@ func (a *StockAnalyzer) Analyze(ctx context.Context, stock StockInfo, themes []s
 	} else {
 		res, err = a.callOnce(ctx, stock, themes, "\n\n⚠️ 上一次返回的不是合法 JSON,请严格只输出 JSON 对象,不要任何前后缀。")
 		if err == nil {
-			return res, nil
+			return annotateLimitUp(res, stock), nil
 		}
 		log.Printf("[StockAnalyzer] %s(%s) L2 failed: %v, falling back", stock.Name, stock.Code, err)
 	}
@@ -148,7 +148,7 @@ func (a *StockAnalyzer) Analyze(ctx context.Context, stock StockInfo, themes []s
 	// Level 3
 	fb := fallbackScore(stock)
 	fb.IsFallback = true
-	return fb, nil
+	return annotateLimitUp(fb, stock), nil
 }
 
 func isNonRetryable(err error) bool {

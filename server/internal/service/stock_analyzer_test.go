@@ -188,3 +188,57 @@ func Test_Analyze_no_retry_on_4xx(t *testing.T) {
 		t.Errorf("expected cap-7 fallback, got %d", res.BuyScore)
 	}
 }
+
+func Test_Analyze_annotates_limit_up(t *testing.T) {
+	// mock AI 返回正常 8 分但空 trap_warning
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"choices":[{"message":{"content":"{\"buy_score\":8,\"buy_reason\":\"放量突破\",\"tail_score\":8,\"tail_reason\":\"尾盘强势\",\"key_signals\":\"涨停接力\",\"risk_level\":2,\"trap_warning\":\"\"}"}}]}`))
+	}))
+	defer ts.Close()
+
+	a := NewStockAnalyzer("test-key", ts.URL, "test-model")
+
+	// 主板涨停 10% — 期望 trap_warning 被 prefix
+	res, err := a.Analyze(context.Background(), StockInfo{
+		Code: "600000", Name: "测试主板", ChangePct: 10.0, PrevClose: 10.0, Open: 10.5,
+	}, nil)
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	if res.BuyScore != 8 {
+		t.Errorf("buy_score should not change, want 8 got %d", res.BuyScore)
+	}
+	if res.TrapWarning != "当前已涨停,追高风险" {
+		t.Errorf("expected limit-up warning prefix, got %q", res.TrapWarning)
+	}
+
+	// AI 返回非空 trap_warning 时,涨停警告 prefix + "; " + 原 warning
+	tsWithWarning := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"choices":[{"message":{"content":"{\"buy_score\":7,\"buy_reason\":\"放量\",\"tail_score\":7,\"tail_reason\":\"尾盘\",\"key_signals\":\"\",\"risk_level\":3,\"trap_warning\":\"秒拉诱多\"}"}}]}`))
+	}))
+	defer tsWithWarning.Close()
+
+	a2 := NewStockAnalyzer("test-key", tsWithWarning.URL, "test-model")
+	res2, err := a2.Analyze(context.Background(), StockInfo{
+		Code: "300001", Name: "测试创业", ChangePct: 20.0, PrevClose: 10.0, Open: 12.0,
+	}, nil)
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	if res2.TrapWarning != "开盘一字涨停,流动性差买不进; 秒拉诱多" {
+		t.Errorf("expected merged warning, got %q", res2.TrapWarning)
+	}
+
+	// 非涨停股不应被 annotate
+	res3, err := a.Analyze(context.Background(), StockInfo{
+		Code: "600000", Name: "正常股", ChangePct: 3.0, PrevClose: 10.0, Open: 10.1,
+	}, nil)
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	if res3.TrapWarning != "" {
+		t.Errorf("non-limit-up should keep trap_warning empty, got %q", res3.TrapWarning)
+	}
+}
