@@ -73,10 +73,25 @@ func TestLimitUpWarning(t *testing.T) {
 			StockInfo{Code: "600000", PrevClose: 0, Open: 11.0, ChangePct: 10.0},
 			"当前已涨停,追高风险",
 		},
+		{
+			"创业板 301 开头涨停 20%",
+			StockInfo{Code: "301001", ChangePct: 20.0, PrevClose: 10.0, Open: 10.0},
+			"当前已涨停,追高风险",
+		},
+		{
+			"北交所 8 开头涨停 30%",
+			StockInfo{Code: "831001", ChangePct: 30.0, PrevClose: 10.0, Open: 10.0},
+			"当前已涨停,追高风险",
+		},
+		{
+			"北交所 12% 不警告(30% 才涨停)",
+			StockInfo{Code: "831001", ChangePct: 12.0, PrevClose: 10.0, Open: 10.0},
+			"",
+		},
 	}
 
 	for _, c := range cases {
-		got := LimitUpWarning(c.stock)
+		got := limitUpWarning(c.stock)
 		if got != c.want {
 			t.Errorf("%s: want %q, got %q", c.name, c.want, got)
 		}
